@@ -46,9 +46,11 @@ func testConfig() *config.Config {
 // SetupIntegrationTest creates a test environment
 func SetupIntegrationTest() *IntegrationTestSuite {
 	userRepo := database.NewMockRepository()
+	userSkillsRepo := database.NewMockRepository()
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(userRepo, tokenService)
-	apiHandler := handler.New(userService)
+	userSkillsService := service.NewSkillService(userSkillsRepo)
+	apiHandler := handler.New(userService, userSkillsService)
 	authMiddleware := middleware.NewAuthMiddleware(tokenService)
 
 	// Create HTTP server with the same routing as local-server.go

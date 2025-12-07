@@ -1,0 +1,228 @@
+package service
+
+import (
+	"time"
+
+	"github.com/hackmajoris/glad/cmd/app/internal/database"
+	"github.com/hackmajoris/glad/cmd/app/internal/dto"
+	apperrors "github.com/hackmajoris/glad/cmd/app/internal/errors"
+	"github.com/hackmajoris/glad/cmd/app/internal/models"
+	"github.com/hackmajoris/glad/pkg/logger"
+)
+
+// Re-export domain errors for convenience in handler layer
+var (
+	ErrSkillNotFound            = apperrors.ErrSkillNotFound
+	ErrSkillAlreadyExists       = apperrors.ErrSkillAlreadyExists
+	ErrInvalidProficiencyLevel  = apperrors.ErrInvalidProficiencyLevel
+	ErrInvalidYearsOfExperience = apperrors.ErrInvalidYearsOfExperience
+	ErrInvalidSkillName         = apperrors.ErrInvalidSkillName
+)
+
+// SkillService handles skill business logic
+type SkillService struct {
+	repo database.SkillRepository
+}
+
+// NewSkillService creates a new SkillService
+func NewSkillService(repo database.SkillRepository) *SkillService {
+	return &SkillService{
+		repo: repo,
+	}
+}
+
+// AddSkill adds a new skill to a user
+func (s *SkillService) AddSkill(username, skillName string, proficiencyLevel models.ProficiencyLevel, yearsOfExperience int, notes string) (*models.UserSkill, error) {
+	log := logger.WithComponent("service").With("operation", "AddSkill", "username", username, "skill", skillName)
+	start := time.Now()
+
+	log.Info("Processing add skill request")
+
+	// Create new skill
+	skill, err := models.NewUserSkill(username, skillName, proficiencyLevel, yearsOfExperience)
+	if err != nil {
+		log.Error("Failed to create skill model", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	if notes != "" {
+		skill.UpdateNotes(notes)
+	}
+
+	// Save skill to database
+	if err := s.repo.CreateSkill(skill); err != nil {
+		log.Error("Failed to save skill to database", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	log.Info("Skill added successfully", "duration", time.Since(start))
+	return skill, nil
+}
+
+// GetSkill retrieves a specific skill for a user
+func (s *SkillService) GetSkill(username, skillName string) (*models.UserSkill, error) {
+	log := logger.WithComponent("service").With("operation", "GetSkill", "username", username, "skill", skillName)
+	start := time.Now()
+
+	log.Debug("Retrieving skill")
+
+	skill, err := s.repo.GetSkill(username, skillName)
+	if err != nil {
+		log.Error("Failed to get skill", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	log.Debug("Skill retrieved successfully", "duration", time.Since(start))
+	return skill, nil
+}
+
+// UpdateSkill updates an existing skill
+func (s *SkillService) UpdateSkill(username, skillName string, proficiencyLevel *models.ProficiencyLevel, yearsOfExperience *int, notes *string) (*models.UserSkill, error) {
+	log := logger.WithComponent("service").With("operation", "UpdateSkill", "username", username, "skill", skillName)
+	start := time.Now()
+
+	log.Info("Processing update skill request")
+
+	// Get existing skill
+	skill, err := s.repo.GetSkill(username, skillName)
+	if err != nil {
+		log.Error("Failed to get skill", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	// Update fields if provided
+	if proficiencyLevel != nil {
+		if err := skill.UpdateProficiency(*proficiencyLevel); err != nil {
+			log.Error("Failed to update proficiency level", "error", err.Error(), "duration", time.Since(start))
+			return nil, err
+		}
+	}
+
+	if yearsOfExperience != nil {
+		if err := skill.UpdateYearsOfExperience(*yearsOfExperience); err != nil {
+			log.Error("Failed to update years of experience", "error", err.Error(), "duration", time.Since(start))
+			return nil, err
+		}
+	}
+
+	if notes != nil {
+		skill.UpdateNotes(*notes)
+	}
+
+	// Save updated skill
+	if err := s.repo.UpdateSkill(skill); err != nil {
+		log.Error("Failed to update skill in database", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	log.Info("Skill updated successfully", "duration", time.Since(start))
+	return skill, nil
+}
+
+// DeleteSkill removes a skill from a user
+func (s *SkillService) DeleteSkill(username, skillName string) error {
+	log := logger.WithComponent("service").With("operation", "DeleteSkill", "username", username, "skill", skillName)
+	start := time.Now()
+
+	log.Info("Processing delete skill request")
+
+	if err := s.repo.DeleteSkill(username, skillName); err != nil {
+		log.Error("Failed to delete skill", "error", err.Error(), "duration", time.Since(start))
+		return err
+	}
+
+	log.Info("Skill deleted successfully", "duration", time.Since(start))
+	return nil
+}
+
+// ListSkillsForUser retrieves all skills for a user
+func (s *SkillService) ListSkillsForUser(username string) ([]dto.SkillResponse, error) {
+	log := logger.WithComponent("service").With("operation", "ListSkillsForUser", "username", username)
+	start := time.Now()
+
+	log.Info("Retrieving skills for user")
+
+	skills, err := s.repo.ListSkillsForUser(username)
+	if err != nil {
+		log.Error("Failed to retrieve skills", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	// Convert to response DTOs
+	result := make([]dto.SkillResponse, len(skills))
+	for i, skill := range skills {
+		result[i] = dto.SkillResponse{
+			SkillName:         skill.SkillName,
+			ProficiencyLevel:  string(skill.ProficiencyLevel),
+			YearsOfExperience: skill.YearsOfExperience,
+			Endorsements:      skill.Endorsements,
+			LastUsedDate:      skill.LastUsedDate,
+			Notes:             skill.Notes,
+			CreatedAt:         skill.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:         skill.UpdatedAt.Format(time.RFC3339),
+		}
+	}
+
+	log.Info("Skills retrieved successfully", "count", len(result), "duration", time.Since(start))
+	return result, nil
+}
+
+// ListUsersBySkill retrieves all users who have a specific skill
+func (s *SkillService) ListUsersBySkill(skillName string) ([]dto.UserSkillResponse, error) {
+	log := logger.WithComponent("service").With("operation", "ListUsersBySkill", "skill", skillName)
+	start := time.Now()
+
+	log.Info("Retrieving users by skill")
+
+	skills, err := s.repo.ListUsersBySkill(skillName)
+	if err != nil {
+		log.Error("Failed to retrieve users by skill", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	// Convert to response DTOs
+	result := make([]dto.UserSkillResponse, len(skills))
+	for i, skill := range skills {
+		result[i] = dto.UserSkillResponse{
+			Username:          skill.Username,
+			SkillName:         skill.SkillName,
+			ProficiencyLevel:  string(skill.ProficiencyLevel),
+			YearsOfExperience: skill.YearsOfExperience,
+			Endorsements:      skill.Endorsements,
+			LastUsedDate:      skill.LastUsedDate,
+		}
+	}
+
+	log.Info("Users with skill retrieved successfully", "skill", skillName, "count", len(result), "duration", time.Since(start))
+	return result, nil
+}
+
+// ListUsersBySkillAndLevel retrieves users with a skill at a specific proficiency level
+func (s *SkillService) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]dto.UserSkillResponse, error) {
+	log := logger.WithComponent("service").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel)
+	start := time.Now()
+
+	log.Info("Retrieving users by skill and level")
+
+	skills, err := s.repo.ListUsersBySkillAndLevel(skillName, proficiencyLevel)
+	if err != nil {
+		log.Error("Failed to retrieve users by skill and level", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	// Convert to response DTOs
+	result := make([]dto.UserSkillResponse, len(skills))
+	for i, skill := range skills {
+		result[i] = dto.UserSkillResponse{
+			Username:          skill.Username,
+			SkillName:         skill.SkillName,
+			ProficiencyLevel:  string(skill.ProficiencyLevel),
+			YearsOfExperience: skill.YearsOfExperience,
+			Endorsements:      skill.Endorsements,
+			LastUsedDate:      skill.LastUsedDate,
+		}
+	}
+
+	log.Info("Users with skill and level retrieved successfully", "skill", skillName, "level", proficiencyLevel, "count", len(result), "duration", time.Since(start))
+	return result, nil
+}

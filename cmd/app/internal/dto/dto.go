@@ -50,3 +50,53 @@ type UserListResponse struct {
 	Username string `json:"username"`
 	Name     string `json:"name"`
 }
+
+// CurrentUserResponse represents the current authenticated user's data
+type CurrentUserResponse struct {
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// Skill Request DTOs
+
+// CreateSkillRequest represents a request to add a skill to a user
+type CreateSkillRequest struct {
+	SkillName         string `json:"skill_name" validate:"required,min=1,max=100"`
+	ProficiencyLevel  string `json:"proficiency_level" validate:"required,oneof=Beginner Intermediate Advanced Expert"`
+	YearsOfExperience int    `json:"years_of_experience" validate:"min=0"`
+	Notes             string `json:"notes,omitempty" validate:"max=500"`
+}
+
+// UpdateSkillRequest represents a request to update a user's skill
+type UpdateSkillRequest struct {
+	ProficiencyLevel  *string `json:"proficiency_level,omitempty" validate:"omitempty,oneof=Beginner Intermediate Advanced Expert"`
+	YearsOfExperience *int    `json:"years_of_experience,omitempty" validate:"omitempty,min=0"`
+	Notes             *string `json:"notes,omitempty" validate:"omitempty,max=500"`
+}
+
+// Skill Response DTOs
+
+// SkillResponse represents a skill in responses
+type SkillResponse struct {
+	SkillName         string `json:"skill_name"`
+	ProficiencyLevel  string `json:"proficiency_level"`
+	YearsOfExperience int    `json:"years_of_experience"`
+	Endorsements      int    `json:"endorsements"`
+	LastUsedDate      string `json:"last_used_date"`
+	Notes             string `json:"notes,omitempty"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
+}
+
+// UserSkillResponse represents a user with a specific skill (for cross-user queries)
+type UserSkillResponse struct {
+	Username          string `json:"username"`
+	Name              string `json:"name,omitempty"` // From GSI projection
+	SkillName         string `json:"skill_name"`
+	ProficiencyLevel  string `json:"proficiency_level"`
+	YearsOfExperience int    `json:"years_of_experience"`
+	Endorsements      int    `json:"endorsements"`
+	LastUsedDate      string `json:"last_used_date"`
+}

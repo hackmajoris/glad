@@ -127,6 +127,26 @@ func (h *Handler) ListUsers(request events.APIGatewayProxyRequest) (events.APIGa
 	return successResponse(http.StatusOK, users), nil
 }
 
+// GetCurrentUser handles retrieving the current authenticated user's information
+func (h *Handler) GetCurrentUser(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	claims, ok := request.RequestContext.Authorizer["claims"].(*auth.JWTClaims)
+	if !ok {
+		return errorResponse(http.StatusUnauthorized, "Invalid token claims"), nil
+	}
+
+	user, err := h.userService.GetUser(claims.Username)
+	if err != nil {
+		return h.handleServiceError(err), nil
+	}
+
+	return successResponse(http.StatusOK, dto.CurrentUserResponse{
+		Username:  user.Username,
+		Name:      user.Name,
+		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}), nil
+}
+
 // handleServiceError converts service errors to HTTP responses using the error mapper
 func (h *Handler) handleServiceError(err error) events.APIGatewayProxyResponse {
 	statusCode, message := h.errorMapper.MapToHTTP(err)

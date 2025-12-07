@@ -42,6 +42,7 @@ func setupRouter(h *handler.Handler, auth *middleware.AuthMiddleware) *router.Ro
 
 	// Protected routes
 	r.GET("/protected", h.Protected, auth.RequireAuth())
+	r.GET("/me", h.GetCurrentUser, auth.RequireAuth())
 	r.PUT("/user", h.UpdateUser, auth.RequireAuth())
 	r.GET("/users", h.ListUsers, auth.RequireAuth())
 

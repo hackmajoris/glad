@@ -95,6 +95,12 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		AuthorizationType: awsapigateway.AuthorizationType_NONE,
 	})
 
+	// Add /me GET endpoint for current user
+	meResource := api.Root().AddResource(jsii.String("me"), nil)
+	meResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
 	// Create UsagePlan AFTER all methods are defined
 	awsapigateway.NewUsagePlan(stack, jsii.String(id+"-api-gateway-usage-plan"), &awsapigateway.UsagePlanProps{
 		Name:        jsii.String(id + "-api-gateway-usage-plan"),

@@ -15,4 +15,11 @@ var (
 
 	// ErrInvalidCredentials Authentication errors
 	ErrInvalidCredentials = errors.New("invalid credentials")
+
+	// ErrSkillNotFound Skill-related errors
+	ErrSkillNotFound            = errors.New("skill not found")
+	ErrSkillAlreadyExists       = errors.New("skill already exists for this user")
+	ErrInvalidProficiencyLevel  = errors.New("proficiency level must be Beginner, Intermediate, Advanced, or Expert")
+	ErrInvalidYearsOfExperience = errors.New("years of experience must be non-negative")
+	ErrInvalidSkillName         = errors.New("skill name must be between 1 and 100 characters")
 )

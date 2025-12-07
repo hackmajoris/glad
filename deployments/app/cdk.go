@@ -34,15 +34,74 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
 	// })
 
-	// Create DynamoTable
+	// Create DynamoDB Single Table
+	// This table uses single-table design pattern to store multiple entity types
+	// Entities: User, UserSkill (and future: Project, Settings, etc.)
+	// Key structure:
+	//   - User:      PK=USER#<username>, SK=PROFILE
+	//   - UserSkill: PK=USER#<username>, SK=SKILL#<skill_name>
 
-	userTable := awsdynamodb.NewTableV2(stack, jsii.String(id+"-users-table"), &awsdynamodb.TablePropsV2{
-		TableName: jsii.String("users"),
+	entitiesTable := awsdynamodb.NewTableV2(stack, jsii.String(id+"-entities-table"), &awsdynamodb.TablePropsV2{
+		TableName: jsii.String("glad-entities"),
+
+		// Partition Key: PK (stores entity identifier)
 		PartitionKey: &awsdynamodb.Attribute{
-			Name: jsii.String("username"),
+			Name: jsii.String("PK"),
 			Type: awsdynamodb.AttributeType_STRING,
 		},
-		RemovalPolicy: awscdk.RemovalPolicy_DESTROY, // For dev environments
+
+		// Sort Key: SK (stores entity type and sub-identifier)
+		SortKey: &awsdynamodb.Attribute{
+			Name: jsii.String("SK"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+
+		// GSI1: For cross-entity queries (e.g., find all users with a skill)
+		GlobalSecondaryIndexes: &[]*awsdynamodb.GlobalSecondaryIndexPropsV2{
+			{
+				IndexName: jsii.String("GSI1"),
+				PartitionKey: &awsdynamodb.Attribute{
+					Name: jsii.String("GSI1PK"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				SortKey: &awsdynamodb.Attribute{
+					Name: jsii.String("GSI1SK"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				// INCLUDE projection for cost optimization
+				// Only includes essential attributes needed for queries
+				ProjectionType: awsdynamodb.ProjectionType_INCLUDE,
+				NonKeyAttributes: jsii.Strings(
+					"EntityType",
+					"Username",
+					"SkillName",
+					"ProficiencyLevel",
+					"Name",
+				),
+			},
+		},
+
+		// Enable point-in-time recovery for data protection
+		PointInTimeRecovery: jsii.Bool(true),
+
+		// Enable DynamoDB Streams for event-driven architecture
+		DynamoStream: awsdynamodb.StreamViewType_NEW_AND_OLD_IMAGES,
+
+		// Remove table on stack deletion (for dev/testing)
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+
+		// Additional tags
+		Tags: &[]*awscdk.CfnTag{
+
+			{
+				Key:   jsii.String("Purpose"),
+				Value: jsii.String("Single-Table-Design"),
+			},
+			{
+				Key:   jsii.String("DataModel"),
+				Value: jsii.String("Multi-Entity"),
+			},
+		},
 	})
 
 	// Create Lambda
@@ -52,7 +111,8 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		Handler: jsii.String("main"),
 	})
 
-	userTable.GrantReadWriteData(myFunc)
+	// Grant Lambda read/write access to DynamoDB table
+	entitiesTable.GrantReadWriteData(myFunc)
 
 	api := awsapigateway.NewRestApi(stack, jsii.String(id+"-api-gateway"), &awsapigateway.RestApiProps{
 		RestApiName: jsii.String("glad-api gateway"),
@@ -98,6 +158,49 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	// Add /me GET endpoint for current user
 	meResource := api.Root().AddResource(jsii.String("me"), nil)
 	meResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// Skill Management Endpoints
+	// Pattern: /users/{username}/skills
+	usersSkillsResource := usersResource.AddResource(jsii.String("{username}"), nil)
+	skillsResource := usersSkillsResource.AddResource(jsii.String("skills"), nil)
+
+	// POST /users/{username}/skills - Add a skill
+	skillsResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// GET /users/{username}/skills - List all skills for user
+	skillsResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// Specific skill endpoints
+	// Pattern: /users/{username}/skills/{skillName}
+	skillResource := skillsResource.AddResource(jsii.String("{skillName}"), nil)
+
+	// GET /users/{username}/skills/{skillName} - Get specific skill
+	skillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// PUT /users/{username}/skills/{skillName} - Update skill
+	skillResource.AddMethod(jsii.String("PUT"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// DELETE /users/{username}/skills/{skillName} - Delete skill
+	skillResource.AddMethod(jsii.String("DELETE"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// Global skill query endpoint
+	// GET /skills/{skillName}/users - Find all users with a skill
+	skillsGlobalResource := api.Root().AddResource(jsii.String("skills"), nil)
+	skillNameResource := skillsGlobalResource.AddResource(jsii.String("{skillName}"), nil)
+	usersWithSkillResource := skillNameResource.AddResource(jsii.String("users"), nil)
+	usersWithSkillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
 		AuthorizationType: awsapigateway.AuthorizationType_NONE,
 	})
 

@@ -50,3 +50,11 @@ type UserListResponse struct {
 	Username string `json:"username"`
 	Name     string `json:"name"`
 }
+
+// CurrentUserResponse represents the current authenticated user's data
+type CurrentUserResponse struct {
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}

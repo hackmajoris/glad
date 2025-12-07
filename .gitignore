@@ -1,0 +1,86 @@
+# Go binaries and build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bootstrap
+main
+
+# AIs
+.continue
+.claude
+.amazonq
+.mcp.json
+
+scripts/continue-refresh-token.sh
+
+# Test binaries and coverage
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# Build directory
+.bin/
+build/
+dist/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets.*
+config.local.*
+
+# AWS CDK
+.cdk.staging/
+cdk.out/
+cdk.context.json
+
+# Lambda deployment packages
+*.zip
+function.zip
+lambda-function.zip
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Node.js (CDK dependencies)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Go module downloads (keep go.sum)
+vendor/

@@ -1,0 +1,170 @@
+version: '3'
+
+tasks:
+  default:
+    desc: 'List all available tasks'
+    cmd: task --list-all
+
+  # Continue AI tasks
+  continue:refresh-token:
+    desc: 'Refresh msg ai api-token'
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - scripts/continue-refresh-token.sh
+
+  # Build tasks
+  build:lambda:
+    desc: 'Build Lambda function for AWS deployment'
+    cmds:
+      - echo 'Building Lambda function...'
+      - mkdir -p .bin
+      - env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda -ldflags='-s -w' -o .bin/bootstrap ./cmd/app
+      - cd .bin && zip lambda-function.zip bootstrap
+      - echo 'success!'
+
+  # Development tasks
+  
+  # Testing tasks
+  test:
+    desc: 'Run all Go tests'
+    cmds:
+      - go test ./...
+
+  test:verbose:
+    desc: 'Run all Go tests with verbose output'
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: 'Run tests with coverage report'
+    cmds:
+      - go test -v -cover ./...
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo 'Coverage report generated - coverage.html'
+
+  test:suite:
+    desc: 'Run comprehensive test suite with detailed reporting'
+    cmds:
+      - go run -tags test test_suite.go
+
+  test:api:
+    desc: 'Run API integration tests against local server'
+    cmds:
+      - chmod +x cmd/app/testdata/test-api.sh
+      - cmd/app/testdata/test-api.sh
+
+  test:models:
+    desc: 'Run only model tests'
+    cmds:
+      - go test -v ./cmd/app/internal/models
+
+  test:auth:
+    desc: 'Run only authentication tests'
+    cmds:
+      - go test -v ./pkg/auth
+      - go test -v ./pkg/middleware
+
+  test:database:
+    desc: 'Run only database tests'
+    cmds:
+      - go test -v ./cmd/app/internal/database
+
+  test:handlers:
+    desc: 'Run only API handler tests'
+    cmds:
+      - go test -v ./cmd/app/internal/api
+
+  test:integration:
+    desc: 'Run integration tests (replaces test-api.sh and local-server)'
+    cmds:
+      - go test -v -tags integration ./cmd/app
+
+  test:all:
+    desc: 'Run all tests including integration tests'
+    cmds:
+      - go test -v ./...
+      - go test -v -tags integration ./cmd/app
+
+  # Code quality tasks
+  fmt:
+    desc: 'Format Go code'
+    cmds:
+      - go fmt ./...
+
+  lint:
+    desc: 'Run Go linter (go vet)'
+    cmds:
+      - echo 'Running go vet...'
+      - go vet ./...
+
+  # Utility tasks
+  clean:
+    desc: 'Clean build artifacts'
+    cmds:
+      - rm -rf .bin/
+      - echo 'Cleaned build artifacts'
+
+  # CDK Deployment tasks
+  cdk:install:
+    desc: 'Install CDK dependencies'
+    dir: 'deployments/app'
+    cmds:
+      - go mod download
+      - echo 'CDK dependencies installed'
+
+  cdk:synth:
+    desc: 'Synthesize CDK template (generate CloudFormation)'
+    dir: 'deployments/app'
+    deps: [build:lambda]
+    cmds:
+      - cdk synth
+      - echo 'CDK template synthesized to cdk.out/'
+
+  cdk:diff:
+    desc: 'Show differences between current and deployed stack'
+    dir: 'deployments/app'
+    deps: [build:lambda]
+    cmds:
+      - cdk diff
+
+  cdk:deploy:
+    desc: 'Deploy infrastructure to AWS'
+    dir: 'deployments/app'
+    deps: [build:lambda]
+    cmds:
+      - echo 'Deploying to AWS...'
+      - cdk deploy --require-approval never
+      - echo 'Deployment completed!'
+
+  cdk:destroy:
+    desc: 'Destroy AWS infrastructure (use with caution!)'
+    dir: 'deployments/app'
+    cmds:
+      - echo 'WARNING This will destroy all AWS resources!'
+      - cdk destroy --force
+
+  cdk:bootstrap:
+    desc: 'Bootstrap CDK in your AWS account (run once)'
+    dir: 'deployments/app'
+    cmds:
+      - cdk bootstrap
+      - echo 'CDK bootstrapped for your AWS account'
+
+  # Full deployment workflow
+  deploy:
+    desc: 'Full deployment workflow (test, build, deploy)'
+    deps: [test, build:lambda, cdk:deploy]
+
+  deploy:diff:
+    desc: 'Preview deployment changes'
+    deps: [build:lambda, cdk:diff]
+
+  # Development workflow shortcuts
+  dev:full-test:
+    desc: 'Run full development test cycle (format, lint, test, build)'
+    deps: [fmt, lint, test, build:lambda]
+
+  dev:quick-test:
+    desc: 'Quick development test (format, test only)'
+    deps: [fmt, test]

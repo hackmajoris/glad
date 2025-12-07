@@ -15,12 +15,6 @@ const (
 	GSI1Name = "GSI1"
 )
 
-// Repository combines all repository interfaces
-type Repository interface {
-	UserRepository
-	SkillRepository
-}
-
 // DynamoDBRepository implements Repository using DynamoDB single table design
 type DynamoDBRepository struct {
 	client *dynamodb.DynamoDB

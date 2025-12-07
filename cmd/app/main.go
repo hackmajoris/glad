@@ -20,7 +20,7 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize dependencies
-	repo := database.NewDynamoDBRepository()
+	repo := database.NewRepository(cfg)
 	tokenService := auth.NewTokenService(cfg)
 
 	// Initialize services

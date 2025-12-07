@@ -45,8 +45,8 @@ func testConfig() *config.Config {
 
 // SetupIntegrationTest creates a test environment
 func SetupIntegrationTest() *IntegrationTestSuite {
-	userRepo := database.NewUserMockRepository()
-	userSkillsRepo := database.NewUserSkillsMockRepository()
+	userRepo := database.NewMockRepository()
+	userSkillsRepo := database.NewMockRepository()
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(userRepo, tokenService)
 	userSkillsService := service.NewSkillService(userSkillsRepo)

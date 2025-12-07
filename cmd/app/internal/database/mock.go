@@ -9,45 +9,34 @@ import (
 	"github.com/hackmajoris/glad/pkg/logger"
 )
 
-// UserMockRepository implements UserRepository for testing
-type UserMockRepository struct {
-	users map[string]*models.User
-	mutex sync.RWMutex
+// MockRepository implements both UserRepository and SkillRepository for testing
+// This matches the DynamoDBRepository structure with unified implementation
+type MockRepository struct {
+	users  map[string]*models.User      // key: username
+	skills map[string]*models.UserSkill // key: "username#skillname"
+	mutex  sync.RWMutex
 }
 
-type UserSkillsMockRepository struct {
-	users map[string]*models.UserSkill
-	mutex sync.RWMutex
-}
-
-// NewUserMockRepository creates a new mock repository
-func NewUserMockRepository() *UserMockRepository {
+// NewMockRepository creates a new unified mock repository
+func NewMockRepository() *MockRepository {
 	log := logger.WithComponent("database")
-	log.Info("Initializing Mock repository for local development")
+	log.Info("Initializing unified Mock repository for local development")
 
-	repo := &UserMockRepository{
-		users: make(map[string]*models.User),
+	repo := &MockRepository{
+		users:  make(map[string]*models.User),
+		skills: make(map[string]*models.UserSkill),
 	}
 
-	log.Info("Mock repository initialized successfully")
+	log.Info("Unified Mock repository initialized successfully")
 	return repo
 }
 
-// NewUserSkillsMockRepository NewUserMockRepository creates a new mock repository
-func NewUserSkillsMockRepository() *UserSkillsMockRepository {
-	log := logger.WithComponent("database")
-	log.Info("Initializing Mock repository for local development")
-
-	repo := &UserSkillsMockRepository{
-		users: make(map[string]*models.UserSkill),
-	}
-
-	log.Info("Mock repository initialized successfully")
-	return repo
-}
+// ============================================================================
+// USER REPOSITORY METHODS
+// ============================================================================
 
 // CreateUser creates a user in memory
-func (m *UserMockRepository) CreateUser(user *models.User) error {
+func (m *MockRepository) CreateUser(user *models.User) error {
 	log := logger.WithComponent("database").With("operation", "CreateUser", "username", user.Username, "repository", "mock")
 	start := time.Now()
 
@@ -67,7 +56,7 @@ func (m *UserMockRepository) CreateUser(user *models.User) error {
 }
 
 // GetUser retrieves a user from memory
-func (m *UserMockRepository) GetUser(username string) (*models.User, error) {
+func (m *MockRepository) GetUser(username string) (*models.User, error) {
 	log := logger.WithComponent("database").With("operation", "GetUser", "username", username, "repository", "mock")
 	start := time.Now()
 
@@ -87,7 +76,7 @@ func (m *UserMockRepository) GetUser(username string) (*models.User, error) {
 }
 
 // UpdateUser updates a user in memory
-func (m *UserMockRepository) UpdateUser(user *models.User) error {
+func (m *MockRepository) UpdateUser(user *models.User) error {
 	log := logger.WithComponent("database").With("operation", "UpdateUser", "username", user.Username, "repository", "mock")
 	start := time.Now()
 
@@ -107,7 +96,7 @@ func (m *UserMockRepository) UpdateUser(user *models.User) error {
 }
 
 // UserExists checks if a user exists in memory
-func (m *UserMockRepository) UserExists(username string) (bool, error) {
+func (m *MockRepository) UserExists(username string) (bool, error) {
 	log := logger.WithComponent("database").With("operation", "UserExists", "username", username, "repository", "mock")
 	start := time.Now()
 
@@ -122,7 +111,7 @@ func (m *UserMockRepository) UserExists(username string) (bool, error) {
 }
 
 // ListUsers retrieves all users from memory
-func (m *UserMockRepository) ListUsers() ([]*models.User, error) {
+func (m *MockRepository) ListUsers() ([]*models.User, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsers", "repository", "mock")
 	start := time.Now()
 
@@ -140,8 +129,12 @@ func (m *UserMockRepository) ListUsers() ([]*models.User, error) {
 	return users, nil
 }
 
+// ============================================================================
+// SKILL REPOSITORY METHODS
+// ============================================================================
+
 // CreateSkill creates a user skill in memory
-func (m *UserSkillsMockRepository) CreateSkill(skill *models.UserSkill) error {
+func (m *MockRepository) CreateSkill(skill *models.UserSkill) error {
 	log := logger.WithComponent("database").With("operation", "CreateSkill", "username", skill.Username, "skill", skill.SkillName, "repository", "mock")
 	start := time.Now()
 
@@ -151,18 +144,18 @@ func (m *UserSkillsMockRepository) CreateSkill(skill *models.UserSkill) error {
 	defer m.mutex.Unlock()
 
 	key := skill.Username + "#" + skill.SkillName
-	if _, exists := m.users[key]; exists {
+	if _, exists := m.skills[key]; exists {
 		log.Debug("Skill already exists", "duration", time.Since(start))
 		return apperrors.ErrSkillAlreadyExists
 	}
 
-	m.users[key] = skill
-	log.Info("Skill created successfully in mock repository", "total_skills", len(m.users), "duration", time.Since(start))
+	m.skills[key] = skill
+	log.Info("Skill created successfully in mock repository", "total_skills", len(m.skills), "duration", time.Since(start))
 	return nil
 }
 
 // GetSkill retrieves a user skill from memory
-func (m *UserSkillsMockRepository) GetSkill(username, skillName string) (*models.UserSkill, error) {
+func (m *MockRepository) GetSkill(username, skillName string) (*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "GetSkill", "username", username, "skill", skillName, "repository", "mock")
 	start := time.Now()
 
@@ -172,7 +165,7 @@ func (m *UserSkillsMockRepository) GetSkill(username, skillName string) (*models
 	defer m.mutex.RUnlock()
 
 	key := username + "#" + skillName
-	skill, exists := m.users[key]
+	skill, exists := m.skills[key]
 	if !exists {
 		log.Debug("Skill not found in mock repository", "duration", time.Since(start))
 		return nil, apperrors.ErrSkillNotFound
@@ -183,7 +176,7 @@ func (m *UserSkillsMockRepository) GetSkill(username, skillName string) (*models
 }
 
 // UpdateSkill updates a user skill in memory
-func (m *UserSkillsMockRepository) UpdateSkill(skill *models.UserSkill) error {
+func (m *MockRepository) UpdateSkill(skill *models.UserSkill) error {
 	log := logger.WithComponent("database").With("operation", "UpdateSkill", "username", skill.Username, "skill", skill.SkillName, "repository", "mock")
 	start := time.Now()
 
@@ -193,18 +186,18 @@ func (m *UserSkillsMockRepository) UpdateSkill(skill *models.UserSkill) error {
 	defer m.mutex.Unlock()
 
 	key := skill.Username + "#" + skill.SkillName
-	if _, exists := m.users[key]; !exists {
+	if _, exists := m.skills[key]; !exists {
 		log.Debug("Skill not found for update", "duration", time.Since(start))
 		return apperrors.ErrSkillNotFound
 	}
 
-	m.users[key] = skill
+	m.skills[key] = skill
 	log.Info("Skill updated successfully in mock repository", "duration", time.Since(start))
 	return nil
 }
 
 // DeleteSkill deletes a user skill from memory
-func (m *UserSkillsMockRepository) DeleteSkill(username, skillName string) error {
+func (m *MockRepository) DeleteSkill(username, skillName string) error {
 	log := logger.WithComponent("database").With("operation", "DeleteSkill", "username", username, "skill", skillName, "repository", "mock")
 	start := time.Now()
 
@@ -214,18 +207,18 @@ func (m *UserSkillsMockRepository) DeleteSkill(username, skillName string) error
 	defer m.mutex.Unlock()
 
 	key := username + "#" + skillName
-	if _, exists := m.users[key]; !exists {
+	if _, exists := m.skills[key]; !exists {
 		log.Debug("Skill not found for deletion", "duration", time.Since(start))
 		return apperrors.ErrSkillNotFound
 	}
 
-	delete(m.users, key)
+	delete(m.skills, key)
 	log.Info("Skill deleted successfully from mock repository", "duration", time.Since(start))
 	return nil
 }
 
 // ListSkillsForUser retrieves all skills for a specific user from memory
-func (m *UserSkillsMockRepository) ListSkillsForUser(username string) ([]*models.UserSkill, error) {
+func (m *MockRepository) ListSkillsForUser(username string) ([]*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "ListSkillsForUser", "username", username, "repository", "mock")
 	start := time.Now()
 
@@ -235,11 +228,10 @@ func (m *UserSkillsMockRepository) ListSkillsForUser(username string) ([]*models
 	defer m.mutex.RUnlock()
 
 	var skills []*models.UserSkill
-	for key, skill := range m.users {
+	for _, skill := range m.skills {
 		if skill.Username == username {
 			skills = append(skills, skill)
 		}
-		_ = key
 	}
 
 	log.Info("Skills retrieved successfully for user from mock repository", "count", len(skills), "duration", time.Since(start))
@@ -247,7 +239,7 @@ func (m *UserSkillsMockRepository) ListSkillsForUser(username string) ([]*models
 }
 
 // ListUsersBySkill retrieves all users with a specific skill from memory
-func (m *UserSkillsMockRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill, error) {
+func (m *MockRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "skill", skillName, "repository", "mock")
 	start := time.Now()
 
@@ -257,11 +249,10 @@ func (m *UserSkillsMockRepository) ListUsersBySkill(skillName string) ([]*models
 	defer m.mutex.RUnlock()
 
 	var skills []*models.UserSkill
-	for key, skill := range m.users {
+	for _, skill := range m.skills {
 		if skill.SkillName == skillName {
 			skills = append(skills, skill)
 		}
-		_ = key
 	}
 
 	log.Info("Users retrieved successfully by skill from mock repository", "count", len(skills), "duration", time.Since(start))
@@ -269,7 +260,7 @@ func (m *UserSkillsMockRepository) ListUsersBySkill(skillName string) ([]*models
 }
 
 // ListUsersBySkillAndLevel retrieves all users with a specific skill and proficiency level from memory
-func (m *UserSkillsMockRepository) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
+func (m *MockRepository) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel, "repository", "mock")
 	start := time.Now()
 
@@ -279,11 +270,10 @@ func (m *UserSkillsMockRepository) ListUsersBySkillAndLevel(skillName string, pr
 	defer m.mutex.RUnlock()
 
 	var skills []*models.UserSkill
-	for key, skill := range m.users {
+	for _, skill := range m.skills {
 		if skill.SkillName == skillName && skill.ProficiencyLevel == proficiencyLevel {
 			skills = append(skills, skill)
 		}
-		_ = key
 	}
 
 	log.Info("Users retrieved successfully by skill and level from mock repository", "count", len(skills), "duration", time.Since(start))

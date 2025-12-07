@@ -28,18 +28,21 @@ func testConfig() *config.Config {
 func TestHandler_GetCurrentUser(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupRepo      func(repo *database.UserMockRepository)
+		setupRepo      func(repo *database.MockRepository)
 		claims         *auth.JWTClaims
 		expectedStatus int
 		validateBody   func(t *testing.T, body string)
 	}{
 		{
 			name: "successful user retrieval",
-			setupRepo: func(repo *database.UserMockRepository) {
+			setupRepo: func(repo *database.MockRepository) {
 				user, _ := models.NewUser("testuser", "Test User", "password123")
 				user.CreatedAt = time.Date(2025, 1, 1, 10, 0, 0, 0, time.UTC)
 				user.UpdatedAt = time.Date(2025, 1, 2, 15, 30, 0, 0, time.UTC)
-				repo.CreateUser(user)
+				err := repo.CreateUser(user)
+				if err != nil {
+					return
+				}
 			},
 			claims: &auth.JWTClaims{
 				Username: "testuser",
@@ -67,7 +70,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 		},
 		{
 			name: "invalid token claims",
-			setupRepo: func(repo *database.UserMockRepository) {
+			setupRepo: func(repo *database.MockRepository) {
 				// No setup needed
 			},
 			claims:         nil,
@@ -84,7 +87,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 		},
 		{
 			name: "user not found",
-			setupRepo: func(repo *database.UserMockRepository) {
+			setupRepo: func(repo *database.MockRepository) {
 				// Don't create the user
 			},
 			claims: &auth.JWTClaims{
@@ -105,18 +108,17 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create mock repositories
-			userMockRepo := database.NewUserMockRepository()
-			skillMockRepo := database.NewUserSkillsMockRepository()
+			// Create unified mock repository
+			mockRepo := database.NewMockRepository()
 
 			if tt.setupRepo != nil {
-				tt.setupRepo(userMockRepo)
+				tt.setupRepo(mockRepo)
 			}
 
-			// Create services with mock repositories
+			// Create services with mock repository
 			tokenService := auth.NewTokenService(testConfig())
-			userService := service.NewUserService(userMockRepo, tokenService)
-			skillService := service.NewSkillService(skillMockRepo)
+			userService := service.NewUserService(mockRepo, tokenService)
+			skillService := service.NewSkillService(mockRepo)
 
 			// Create handler
 			h := New(userService, skillService)
@@ -161,19 +163,22 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 
 // TestHandler_GetCurrentUser_TimestampFormat verifies the timestamp format is ISO 8601
 func TestHandler_GetCurrentUser_TimestampFormat(t *testing.T) {
-	// Create mock repository and service
-	mockRepo := database.NewUserMockRepository()
+	// Create unified mock repository
+	mockRepo := database.NewMockRepository()
 
 	// Create a user with specific timestamps
 	user, _ := models.NewUser("testuser", "Test User", "password123")
 	user.CreatedAt = time.Date(2025, 12, 7, 14, 30, 45, 0, time.FixedZone("EST", -5*3600))
 	user.UpdatedAt = time.Date(2025, 12, 7, 16, 45, 30, 0, time.FixedZone("PST", -8*3600))
-	mockRepo.CreateUser(user)
+	err := mockRepo.CreateUser(user)
+	if err != nil {
+		return
+	}
 
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(mockRepo, tokenService)
-	skillMockRepo := database.NewUserSkillsMockRepository()
-	skillService := service.NewSkillService(skillMockRepo)
+	mockRepository := database.NewMockRepository()
+	skillService := service.NewSkillService(mockRepository)
 	h := New(userService, skillService)
 
 	request := events.APIGatewayProxyRequest{
@@ -210,14 +215,17 @@ func TestHandler_GetCurrentUser_TimestampFormat(t *testing.T) {
 // TestHandler_GetCurrentUser_DoesNotExposePassword verifies password hash is not included
 func TestHandler_GetCurrentUser_DoesNotExposePassword(t *testing.T) {
 	// Create mock repository and service
-	mockRepo := database.NewUserMockRepository()
+	mockRepo := database.NewMockRepository()
 
 	user, _ := models.NewUser("testuser", "Test User", "password123")
-	mockRepo.CreateUser(user)
+	err := mockRepo.CreateUser(user)
+	if err != nil {
+		return
+	}
 
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(mockRepo, tokenService)
-	skillMockRepo := database.NewUserSkillsMockRepository()
+	skillMockRepo := database.NewMockRepository()
 	skillService := service.NewSkillService(skillMockRepo)
 	h := New(userService, skillService)
 

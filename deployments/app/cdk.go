@@ -24,8 +24,10 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
+	ENVIRONMENT := "production" // todo: will be parametrised
+
 	// Add environment tag
-	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String("production"), nil)
+	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(ENVIRONMENT), nil)
 
 	// The code that defines your stack goes here
 
@@ -110,6 +112,8 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		Code:    awslambda.AssetCode_FromAsset(jsii.String("../../.bin/lambda-function.zip"), nil),
 		Handler: jsii.String("main"),
 	})
+
+	myFunc.AddEnvironment(jsii.String("environment"), jsii.String(ENVIRONMENT), nil)
 
 	// Grant Lambda read/write access to DynamoDB table
 	entitiesTable.GrantReadWriteData(myFunc)

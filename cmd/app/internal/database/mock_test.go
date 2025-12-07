@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewMockRepository(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 	if repo == nil {
 		t.Error("Expected non-nil repository")
 	}
@@ -23,7 +23,7 @@ func TestNewMockRepository(t *testing.T) {
 }
 
 func TestMockRepository_CreateUser(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 
 	user, err := models.NewUser("testuser", "Test User", "password123")
 	if err != nil {
@@ -44,7 +44,7 @@ func TestMockRepository_CreateUser(t *testing.T) {
 }
 
 func TestMockRepository_GetUser(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 
 	user, err := models.NewUser("testuser", "Test User", "password123")
 	if err != nil {
@@ -74,7 +74,7 @@ func TestMockRepository_GetUser(t *testing.T) {
 }
 
 func TestMockRepository_UpdateUser(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 
 	user, err := models.NewUser("testuser", "Test User", "password123")
 	if err != nil {
@@ -109,7 +109,7 @@ func TestMockRepository_UpdateUser(t *testing.T) {
 }
 
 func TestMockRepository_UserExists(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 
 	user, err := models.NewUser("testuser", "Test User", "password123")
 	if err != nil {
@@ -139,7 +139,7 @@ func TestMockRepository_UserExists(t *testing.T) {
 }
 
 func TestMockRepository_ListUsers(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 
 	// Test empty list
 	users, err := repo.ListUsers()
@@ -180,7 +180,7 @@ func TestMockRepository_ListUsers(t *testing.T) {
 }
 
 func TestMockRepository_ConcurrentAccess(t *testing.T) {
-	repo := NewMockRepository()
+	repo := NewUserMockRepository()
 	var wg sync.WaitGroup
 	concurrency := 10
 

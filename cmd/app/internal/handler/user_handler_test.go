@@ -28,14 +28,14 @@ func testConfig() *config.Config {
 func TestHandler_GetCurrentUser(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupRepo      func(repo *database.MockRepository)
+		setupRepo      func(repo *database.UserMockRepository)
 		claims         *auth.JWTClaims
 		expectedStatus int
 		validateBody   func(t *testing.T, body string)
 	}{
 		{
 			name: "successful user retrieval",
-			setupRepo: func(repo *database.MockRepository) {
+			setupRepo: func(repo *database.UserMockRepository) {
 				user, _ := models.NewUser("testuser", "Test User", "password123")
 				user.CreatedAt = time.Date(2025, 1, 1, 10, 0, 0, 0, time.UTC)
 				user.UpdatedAt = time.Date(2025, 1, 2, 15, 30, 0, 0, time.UTC)
@@ -67,7 +67,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 		},
 		{
 			name: "invalid token claims",
-			setupRepo: func(repo *database.MockRepository) {
+			setupRepo: func(repo *database.UserMockRepository) {
 				// No setup needed
 			},
 			claims:         nil,
@@ -84,7 +84,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 		},
 		{
 			name: "user not found",
-			setupRepo: func(repo *database.MockRepository) {
+			setupRepo: func(repo *database.UserMockRepository) {
 				// Don't create the user
 			},
 			claims: &auth.JWTClaims{
@@ -105,18 +105,21 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create mock repository
-			mockRepo := database.NewMockRepository()
+			// Create mock repositories
+			userMockRepo := database.NewUserMockRepository()
+			skillMockRepo := database.NewUserSkillsMockRepository()
+
 			if tt.setupRepo != nil {
-				tt.setupRepo(mockRepo)
+				tt.setupRepo(userMockRepo)
 			}
 
-			// Create service with mock repository
+			// Create services with mock repositories
 			tokenService := auth.NewTokenService(testConfig())
-			userService := service.NewUserService(mockRepo, tokenService)
+			userService := service.NewUserService(userMockRepo, tokenService)
+			skillService := service.NewSkillService(skillMockRepo)
 
 			// Create handler
-			h := New(userService)
+			h := New(userService, skillService)
 
 			// Create request
 			request := events.APIGatewayProxyRequest{
@@ -159,7 +162,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 // TestHandler_GetCurrentUser_TimestampFormat verifies the timestamp format is ISO 8601
 func TestHandler_GetCurrentUser_TimestampFormat(t *testing.T) {
 	// Create mock repository and service
-	mockRepo := database.NewMockRepository()
+	mockRepo := database.NewUserMockRepository()
 
 	// Create a user with specific timestamps
 	user, _ := models.NewUser("testuser", "Test User", "password123")
@@ -169,7 +172,9 @@ func TestHandler_GetCurrentUser_TimestampFormat(t *testing.T) {
 
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(mockRepo, tokenService)
-	h := New(userService)
+	skillMockRepo := database.NewUserSkillsMockRepository()
+	skillService := service.NewSkillService(skillMockRepo)
+	h := New(userService, skillService)
 
 	request := events.APIGatewayProxyRequest{
 		RequestContext: events.APIGatewayProxyRequestContext{
@@ -205,14 +210,16 @@ func TestHandler_GetCurrentUser_TimestampFormat(t *testing.T) {
 // TestHandler_GetCurrentUser_DoesNotExposePassword verifies password hash is not included
 func TestHandler_GetCurrentUser_DoesNotExposePassword(t *testing.T) {
 	// Create mock repository and service
-	mockRepo := database.NewMockRepository()
+	mockRepo := database.NewUserMockRepository()
 
 	user, _ := models.NewUser("testuser", "Test User", "password123")
 	mockRepo.CreateUser(user)
 
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(mockRepo, tokenService)
-	h := New(userService)
+	skillMockRepo := database.NewUserSkillsMockRepository()
+	skillService := service.NewSkillService(skillMockRepo)
+	h := New(userService, skillService)
 
 	request := events.APIGatewayProxyRequest{
 		RequestContext: events.APIGatewayProxyRequestContext{

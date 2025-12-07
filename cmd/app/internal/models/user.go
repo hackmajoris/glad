@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	apperrors "github.com/hackmajoris/glad/cmd/app/internal/errors"
@@ -10,12 +11,22 @@ import (
 )
 
 // User represents a user in the system (domain model)
+// This entity uses single table design with the following key structure:
+//   - PK: USER#<username>
+//   - SK: PROFILE
 type User struct {
-	Username     string    `json:"username" dynamodbav:"username"`
-	Name         string    `json:"name" dynamodbav:"name"`
-	PasswordHash string    `json:"-" dynamodbav:"password"`
-	CreatedAt    time.Time `json:"created_at" dynamodbav:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" dynamodbav:"updated_at"`
+	// Business attributes
+	Username     string    `json:"username" dynamodbav:"Username"`
+	Name         string    `json:"name" dynamodbav:"Name"`
+	PasswordHash string    `json:"-" dynamodbav:"PasswordHash"`
+	Email        string    `json:"email,omitempty" dynamodbav:"Email,omitempty"`
+	CreatedAt    time.Time `json:"created_at" dynamodbav:"CreatedAt"`
+	UpdatedAt    time.Time `json:"updated_at" dynamodbav:"UpdatedAt"`
+
+	// DynamoDB system attributes for single table design
+	PK         string `json:"-" dynamodbav:"PK"`
+	SK         string `json:"-" dynamodbav:"SK"`
+	EntityType string `json:"entity_type" dynamodbav:"EntityType"`
 }
 
 // NewUser creates a new User with the given credentials
@@ -30,13 +41,27 @@ func NewUser(username, name, password string) (*User, error) {
 	}
 
 	now := time.Now()
-	return &User{
+	user := &User{
 		Username:     username,
 		Name:         name,
 		PasswordHash: string(hashedPassword),
 		CreatedAt:    now,
 		UpdatedAt:    now,
-	}, nil
+		EntityType:   "User",
+	}
+
+	// Set DynamoDB keys
+	user.SetKeys()
+
+	return user, nil
+}
+
+// SetKeys configures the PK and SK for DynamoDB single table design
+func (u *User) SetKeys() {
+	// Base table keys: User profile uses a fixed SK of "PROFILE"
+	u.PK = fmt.Sprintf("USER#%s", u.Username)
+	u.SK = "PROFILE"
+	u.EntityType = "User"
 }
 
 // UpdateName updates the user's name

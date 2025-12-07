@@ -70,7 +70,8 @@ func (r *Router) DELETE(path string, handler HandlerFunc, middleware ...Middlewa
 
 // Route handles an incoming request
 func (r *Router) Route(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	pathRoutes, exists := r.routes[request.Path]
+	// Use Resource instead of Path to match route patterns (handles stage prefix)
+	pathRoutes, exists := r.routes[request.Resource]
 	if !exists {
 		return NotFoundResponse(), nil
 	}

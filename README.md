@@ -8,7 +8,7 @@ A comprehensive serverless API platform built with Go, demonstrating modern clou
 - **G**o - Modern, efficient programming language with excellent performance and concurrency
 - **L**ambda - AWS serverless compute platform for running code without managing servers
 - **A**piGateway - AWS managed API gateway service for creating, deploying, and managing REST APIs
-- **D**ynamoDB - AWS NoSQL database service providing fast and predictable performance with seamless scalability
+- **D**ynamoDB - AWS NoSQL database(Single Table Design) service providing fast and predictable performance with seamless scalability
 
 This project showcases how these four technologies work together to create a production-ready, scalable, and cost-effective serverless API platform that can handle millions of requests while maintaining low latency and high availability.
 
@@ -270,7 +270,7 @@ Structured logging with slog, including request duration tracking.
 
 Deployed resources (via CDK):
 
-- **DynamoDB Table**: `users` table with username as partition key. Single Table Design  - progress ⏳
+- **DynamoDB Table**: `glad-entities` table
 - **Lambda Function**: Go 1.x runtime with provided.al2023
 - **API Gateway**: REST API with CORS enabled
 - **IAM Roles**: Least-privilege access for Lambda

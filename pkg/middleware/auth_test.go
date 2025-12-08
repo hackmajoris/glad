@@ -35,6 +35,7 @@ func TestNewAuthMiddleware(t *testing.T) {
 
 	if middleware == nil {
 		t.Error("Expected non-nil middleware")
+		return
 	}
 
 	if middleware.tokenService != tokenService {

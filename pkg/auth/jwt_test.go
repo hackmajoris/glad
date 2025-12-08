@@ -51,13 +51,24 @@ func TestNewTokenService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save original env value
 			original := os.Getenv("JWT_SECRET")
-			defer os.Setenv("JWT_SECRET", original)
+			defer func(key, value string) {
+				err := os.Setenv(key, value)
+				if err != nil {
+
+				}
+			}("JWT_SECRET", original)
 
 			// Set test env value
 			if tt.envValue != "" {
-				os.Setenv("JWT_SECRET", tt.envValue)
+				err := os.Setenv("JWT_SECRET", tt.envValue)
+				if err != nil {
+					return
+				}
 			} else {
-				os.Unsetenv("JWT_SECRET")
+				err := os.Unsetenv("JWT_SECRET")
+				if err != nil {
+					return
+				}
 			}
 
 			cfg := config.Load()

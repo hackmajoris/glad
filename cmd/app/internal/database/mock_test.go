@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -13,7 +14,9 @@ func TestNewMockRepository(t *testing.T) {
 	repo := NewMockRepository()
 	if repo == nil {
 		t.Error("Expected non-nil repository")
+		return
 	}
+
 	if repo.users == nil {
 		t.Error("Expected users map to be initialized")
 	}
@@ -38,7 +41,7 @@ func TestMockRepository_CreateUser(t *testing.T) {
 
 	// Test duplicate creation
 	err = repo.CreateUser(user)
-	if err != apperrors.ErrUserExists {
+	if !errors.Is(err, apperrors.ErrUserExists) {
 		t.Errorf("Expected ErrUserExists, got %v", err)
 	}
 }
@@ -52,7 +55,10 @@ func TestMockRepository_GetUser(t *testing.T) {
 	}
 
 	// Create user first
-	repo.CreateUser(user)
+	err = repo.CreateUser(user)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
 
 	// Test successful retrieval
 	retrieved, err := repo.GetUser("testuser")
@@ -68,7 +74,7 @@ func TestMockRepository_GetUser(t *testing.T) {
 
 	// Test non-existent user
 	_, err = repo.GetUser("nonexistent")
-	if err != apperrors.ErrUserNotFound {
+	if !errors.Is(err, apperrors.ErrUserNotFound) {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
 	}
 }
@@ -82,10 +88,16 @@ func TestMockRepository_UpdateUser(t *testing.T) {
 	}
 
 	// Create user first
-	repo.CreateUser(user)
+	err = repo.CreateUser(user)
+	if err != nil {
+		return
+	}
 
 	// Update user
-	user.UpdateName("Updated User")
+	err = user.UpdateName("Updated User")
+	if err != nil {
+		return
+	}
 
 	// Test successful update
 	err = repo.UpdateUser(user)
@@ -103,7 +115,7 @@ func TestMockRepository_UpdateUser(t *testing.T) {
 	nonExistentUser, _ := models.NewUser("nonexistent", "Non Existent", "password123")
 
 	err = repo.UpdateUser(nonExistentUser)
-	if err != apperrors.ErrUserNotFound {
+	if !errors.Is(err, apperrors.ErrUserNotFound) {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
 	}
 }
@@ -126,7 +138,10 @@ func TestMockRepository_UserExists(t *testing.T) {
 	}
 
 	// Create user
-	repo.CreateUser(user)
+	err = repo.CreateUser(user)
+	if err != nil {
+		return
+	}
 
 	// Test existing user
 	exists, err = repo.UserExists("testuser")
@@ -154,8 +169,15 @@ func TestMockRepository_ListUsers(t *testing.T) {
 	user1, _ := models.NewUser("user1", "User One", "password123")
 	user2, _ := models.NewUser("user2", "User Two", "password123")
 
-	repo.CreateUser(user1)
-	repo.CreateUser(user2)
+	err = repo.CreateUser(user1)
+	if err != nil {
+		return
+	}
+
+	err = repo.CreateUser(user2)
+	if err != nil {
+		return
+	}
 
 	// Test list with users
 	users, err = repo.ListUsers()
@@ -194,7 +216,11 @@ func TestMockRepository_ConcurrentAccess(t *testing.T) {
 				fmt.Sprintf("User %d", id),
 				"password123",
 			)
-			repo.CreateUser(user)
+
+			err := repo.CreateUser(user)
+			if err != nil {
+				return
+			}
 		}(i)
 	}
 

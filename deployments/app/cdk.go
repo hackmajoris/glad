@@ -17,6 +17,108 @@ type CdkStackProps struct {
 	awscdk.StackProps
 }
 
+func createEntitiesTable(stack awscdk.Stack, id *string, environment string) awsdynamodb.TableV2 {
+	entitiesTable := awsdynamodb.NewTableV2(stack, id, &awsdynamodb.TablePropsV2{
+		TableName: jsii.String("glad-entities"),
+		// Partition Key: PK (stores entity identifier)
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("entity_id"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+
+		GlobalSecondaryIndexes: &[]*awsdynamodb.GlobalSecondaryIndexPropsV2{
+			// GSI1: Query skills by name, optionally filter by level
+			{
+				IndexName: jsii.String("SkillsByLevel"),
+				PartitionKey: &awsdynamodb.Attribute{
+					Name: jsii.String("SkillName"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				SortKey: &awsdynamodb.Attribute{
+					Name: jsii.String("ProficiencyLevel"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				ProjectionType: awsdynamodb.ProjectionType_INCLUDE,
+				NonKeyAttributes: jsii.Strings(
+					"EntityType",
+					"Notes",
+					"Email",
+					"skill_id",
+					"Category",
+					"YearsOfExperience",
+					"Username",
+				),
+			},
+			// GSI2: Query all items for a user (profile + skills)
+			{
+				IndexName: jsii.String("ByUser"),
+				PartitionKey: &awsdynamodb.Attribute{
+					Name: jsii.String("Username"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				SortKey: &awsdynamodb.Attribute{
+					Name: jsii.String("EntityType"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+			},
+			// GSI for querying skills:
+			{
+				IndexName: jsii.String("SkillsByCategory"),
+				PartitionKey: &awsdynamodb.Attribute{
+					Name: jsii.String("EntityType"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				SortKey: &awsdynamodb.Attribute{
+					Name: jsii.String("Category"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+			},
+
+			// GSI for query on EntityType
+			{
+				IndexName: jsii.String("ByEntityType"),
+				PartitionKey: &awsdynamodb.Attribute{
+					Name: jsii.String("EntityType"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				SortKey: &awsdynamodb.Attribute{
+					Name: jsii.String("SkillName"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+			},
+			// GSI: BySkillID - Query UserSkills by skill_id (for syncing denormalized data)
+			{
+				IndexName: jsii.String("BySkillID"),
+				PartitionKey: &awsdynamodb.Attribute{
+					Name: jsii.String("skill_id"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+				SortKey: &awsdynamodb.Attribute{
+					Name: jsii.String("Username"),
+					Type: awsdynamodb.AttributeType_STRING,
+				},
+			},
+		},
+
+		PointInTimeRecovery: jsii.Bool(false),
+		DynamoStream:        awsdynamodb.StreamViewType_NEW_AND_OLD_IMAGES,
+		RemovalPolicy:       awscdk.RemovalPolicy_DESTROY,
+
+		Tags: &[]*awscdk.CfnTag{
+			{
+				Key:   jsii.String("Purpose"),
+				Value: jsii.String("Single-Table-Design"),
+			},
+			{
+				Key:   jsii.String("DataModel"),
+				Value: jsii.String("Multi-Entity"),
+			},
+		},
+	})
+
+	return entitiesTable
+}
+
 func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) awscdk.Stack {
 	var sprops awscdk.StackProps
 	if props != nil {
@@ -29,83 +131,7 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	// Add environment tag
 	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(ENVIRONMENT), nil)
 
-	// The code that defines your stack goes here
-
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("CdkQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
-	// })
-
-	// Create DynamoDB Single Table
-	// This table uses single-table design pattern to store multiple entity types
-	// Entities: User, UserSkill (and future: Project, Settings, etc.)
-	// Key structure:
-	//   - User:      PK=USER#<username>, SK=PROFILE
-	//   - UserSkill: PK=USER#<username>, SK=SKILL#<skill_name>
-
-	entitiesTable := awsdynamodb.NewTableV2(stack, jsii.String(id+"-entities-table"), &awsdynamodb.TablePropsV2{
-		TableName: jsii.String("glad-entities"),
-
-		// Partition Key: PK (stores entity identifier)
-		PartitionKey: &awsdynamodb.Attribute{
-			Name: jsii.String("PK"),
-			Type: awsdynamodb.AttributeType_STRING,
-		},
-
-		// Sort Key: SK (stores entity type and sub-identifier)
-		SortKey: &awsdynamodb.Attribute{
-			Name: jsii.String("SK"),
-			Type: awsdynamodb.AttributeType_STRING,
-		},
-
-		// GSI1: For cross-entity queries (e.g., find all users with a skill)
-		GlobalSecondaryIndexes: &[]*awsdynamodb.GlobalSecondaryIndexPropsV2{
-			{
-				IndexName: jsii.String("GSI1"),
-				PartitionKey: &awsdynamodb.Attribute{
-					Name: jsii.String("GSI1PK"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				SortKey: &awsdynamodb.Attribute{
-					Name: jsii.String("GSI1SK"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				// INCLUDE projection for cost optimization
-				// Only includes essential attributes needed for queries
-				ProjectionType: awsdynamodb.ProjectionType_INCLUDE,
-				NonKeyAttributes: jsii.Strings(
-					"EntityType",
-					"Username",
-					"SkillName",
-					"ProficiencyLevel",
-					"Name",
-				),
-			},
-		},
-
-		// Enable point-in-time recovery for data protection
-		PointInTimeRecovery: jsii.Bool(true),
-
-		// Enable DynamoDB Streams for event-driven architecture
-		DynamoStream: awsdynamodb.StreamViewType_NEW_AND_OLD_IMAGES,
-
-		// Remove table on stack deletion (for dev/testing)
-		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
-
-		// Additional tags
-		Tags: &[]*awscdk.CfnTag{
-
-			{
-				Key:   jsii.String("Purpose"),
-				Value: jsii.String("Single-Table-Design"),
-			},
-			{
-				Key:   jsii.String("DataModel"),
-				Value: jsii.String("Multi-Entity"),
-			},
-		},
-	})
-
+	entitiesTable := createEntitiesTable(stack, jsii.String(id+"-entities-table-"+ENVIRONMENT), ENVIRONMENT)
 	// Create Lambda
 	myFunc := awslambda.NewFunction(stack, jsii.String(id+"-go-func"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
@@ -113,7 +139,7 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		Handler: jsii.String("main"),
 	})
 
-	myFunc.AddEnvironment(jsii.String("environment"), jsii.String(ENVIRONMENT), nil)
+	myFunc.AddEnvironment(jsii.String("ENVIRONMENT"), jsii.String(ENVIRONMENT), nil)
 
 	// Grant Lambda read/write access to DynamoDB table
 	entitiesTable.GrantReadWriteData(myFunc)
@@ -205,6 +231,39 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	skillNameResource := skillsGlobalResource.AddResource(jsii.String("{skillName}"), nil)
 	usersWithSkillResource := skillNameResource.AddResource(jsii.String("users"), nil)
 	usersWithSkillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// Master Skills Management Endpoints
+	// Pattern: /master-skills
+	masterSkillsResource := api.Root().AddResource(jsii.String("master-skills"), nil)
+
+	// POST /master-skills - Create a master skill
+	masterSkillsResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// GET /master-skills - List all master skills
+	masterSkillsResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// Specific master skill endpoints
+	// Pattern: /master-skills/{skillID}
+	masterSkillResource := masterSkillsResource.AddResource(jsii.String("{skillID}"), nil)
+
+	// GET /master-skills/{skillID} - Get specific master skill
+	masterSkillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// PUT /master-skills/{skillID} - Update master skill
+	masterSkillResource.AddMethod(jsii.String("PUT"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	// DELETE /master-skills/{skillID} - Delete master skill
+	masterSkillResource.AddMethod(jsii.String("DELETE"), integration, &awsapigateway.MethodOptions{
 		AuthorizationType: awsapigateway.AuthorizationType_NONE,
 	})
 

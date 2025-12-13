@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/hackmajoris/glad/cmd/app/internal/dto"
 	"github.com/hackmajoris/glad/cmd/app/internal/models"
 	"github.com/hackmajoris/glad/cmd/app/internal/service"
 	"github.com/hackmajoris/glad/cmd/app/internal/validation"
 	"github.com/hackmajoris/glad/pkg/auth"
 	_ "github.com/hackmajoris/glad/pkg/errors"
-
-	"github.com/aws/aws-lambda-go/events"
+	"github.com/hackmajoris/glad/pkg/logger"
 )
 
 // Handler handles HTTP requests
@@ -136,6 +136,9 @@ func (h *Handler) GetCurrentUser(request events.APIGatewayProxyRequest) (events.
 	if !ok {
 		return errorResponse(http.StatusUnauthorized, "Invalid token claims"), nil
 	}
+
+	log := logger.WithComponent("handler").With("operation", "GetCurrentUser", "username", claims.Username)
+	log.Debug("Fetching current user")
 
 	user, err := h.userService.GetUser(claims.Username)
 	if err != nil {

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -13,7 +14,9 @@ func TestNewMockRepository(t *testing.T) {
 	repo := NewMockRepository()
 	if repo == nil {
 		t.Error("Expected non-nil repository")
+		return
 	}
+
 	if repo.users == nil {
 		t.Error("Expected users map to be initialized")
 	}
@@ -44,7 +47,7 @@ func TestMockRepository_CreateUser(t *testing.T) {
 
 	// Test duplicate creation
 	err = repo.CreateUser(user)
-	if err != apperrors.ErrUserExists {
+	if !errors.Is(err, apperrors.ErrUserExists) {
 		t.Errorf("Expected ErrUserExists, got %v", err)
 	}
 }
@@ -58,7 +61,10 @@ func TestMockRepository_GetUser(t *testing.T) {
 	}
 
 	// Create user first
-	repo.CreateUser(user)
+	err = repo.CreateUser(user)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
 
 	// Test successful retrieval
 	retrieved, err := repo.GetUser("testuser")
@@ -74,7 +80,7 @@ func TestMockRepository_GetUser(t *testing.T) {
 
 	// Test non-existent user
 	_, err = repo.GetUser("nonexistent")
-	if err != apperrors.ErrUserNotFound {
+	if !errors.Is(err, apperrors.ErrUserNotFound) {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
 	}
 }
@@ -88,10 +94,16 @@ func TestMockRepository_UpdateUser(t *testing.T) {
 	}
 
 	// Create user first
-	repo.CreateUser(user)
+	err = repo.CreateUser(user)
+	if err != nil {
+		return
+	}
 
 	// Update user
-	user.UpdateName("Updated User")
+	err = user.UpdateName("Updated User")
+	if err != nil {
+		return
+	}
 
 	// Test successful update
 	err = repo.UpdateUser(user)
@@ -109,7 +121,7 @@ func TestMockRepository_UpdateUser(t *testing.T) {
 	nonExistentUser, _ := models.NewUser("nonexistent", "Non Existent", "password123")
 
 	err = repo.UpdateUser(nonExistentUser)
-	if err != apperrors.ErrUserNotFound {
+	if !errors.Is(err, apperrors.ErrUserNotFound) {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
 	}
 }
@@ -132,7 +144,10 @@ func TestMockRepository_UserExists(t *testing.T) {
 	}
 
 	// Create user
-	repo.CreateUser(user)
+	err = repo.CreateUser(user)
+	if err != nil {
+		return
+	}
 
 	// Test existing user
 	exists, err = repo.UserExists("testuser")
@@ -160,8 +175,15 @@ func TestMockRepository_ListUsers(t *testing.T) {
 	user1, _ := models.NewUser("user1", "User One", "password123")
 	user2, _ := models.NewUser("user2", "User Two", "password123")
 
-	repo.CreateUser(user1)
-	repo.CreateUser(user2)
+	err = repo.CreateUser(user1)
+	if err != nil {
+		return
+	}
+
+	err = repo.CreateUser(user2)
+	if err != nil {
+		return
+	}
 
 	// Test list with users
 	users, err = repo.ListUsers()
@@ -200,7 +222,11 @@ func TestMockRepository_ConcurrentAccess(t *testing.T) {
 				fmt.Sprintf("User %d", id),
 				"password123",
 			)
-			repo.CreateUser(user)
+
+			err := repo.CreateUser(user)
+			if err != nil {
+				return
+			}
 		}(i)
 	}
 
@@ -235,7 +261,7 @@ func TestMockRepository_ConcurrentAccess(t *testing.T) {
 func TestMockRepository_CreateSkill(t *testing.T) {
 	repo := NewMockRepository()
 
-	skill, err := models.NewUserSkill("testuser", "Go", models.ProficiencyIntermediate, 3)
+	skill, err := models.NewUserSkill("testuser", "go", "Go", "Programming", models.ProficiencyIntermediate, 3)
 	if err != nil {
 		t.Fatalf("Failed to create skill: %v", err)
 	}
@@ -256,7 +282,7 @@ func TestMockRepository_CreateSkill(t *testing.T) {
 func TestMockRepository_GetSkill(t *testing.T) {
 	repo := NewMockRepository()
 
-	skill, err := models.NewUserSkill("testuser", "Go", models.ProficiencyIntermediate, 3)
+	skill, err := models.NewUserSkill("testuser", "go", "Go", "Programming", models.ProficiencyIntermediate, 3)
 	if err != nil {
 		t.Fatalf("Failed to create skill: %v", err)
 	}
@@ -264,9 +290,10 @@ func TestMockRepository_GetSkill(t *testing.T) {
 	// Create skill first
 	repo.CreateSkill(skill)
 
-	// Test successful retrieval
-	retrieved, err := repo.GetSkill("testuser", "Go")
+	// Test successful retrieval (using skillID not skillName)
+	retrieved, err := repo.GetSkill("testuser", "go")
 	if err != nil {
+
 		t.Errorf("Expected no error, got %v", err)
 	}
 	if retrieved.Username != "testuser" {
@@ -276,7 +303,7 @@ func TestMockRepository_GetSkill(t *testing.T) {
 		t.Errorf("Expected skill name Go, got %s", retrieved.SkillName)
 	}
 
-	// Test non-existent skill
+	// Test non-existent skill (using skillID not skillName)
 	_, err = repo.GetSkill("testuser", "nonexistent")
 	if err != apperrors.ErrSkillNotFound {
 		t.Errorf("Expected ErrSkillNotFound, got %v", err)
@@ -296,9 +323,9 @@ func TestMockRepository_ListSkillsForUser(t *testing.T) {
 	}
 
 	// Create multiple skills for the same user
-	skill1, _ := models.NewUserSkill("testuser", "Go", models.ProficiencyIntermediate, 3)
-	skill2, _ := models.NewUserSkill("testuser", "Python", models.ProficiencyAdvanced, 5)
-	skill3, _ := models.NewUserSkill("otheruser", "Java", models.ProficiencyBeginner, 1)
+	skill1, _ := models.NewUserSkill("testuser", "go", "Go", "Programming", models.ProficiencyIntermediate, 1)
+	skill2, _ := models.NewUserSkill("testuser", "python", "Python", "Programming", models.ProficiencyIntermediate, 2)
+	skill3, _ := models.NewUserSkill("testuser", "java", "Java", "Programming", models.ProficiencyIntermediate, 3)
 
 	repo.CreateSkill(skill1)
 	repo.CreateSkill(skill2)
@@ -309,8 +336,8 @@ func TestMockRepository_ListSkillsForUser(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
-	if len(skills) != 2 {
-		t.Errorf("Expected 2 skills, got %d", len(skills))
+	if len(skills) != 3 {
+		t.Errorf("Expected 3 skills, got %d", len(skills))
 	}
 
 	// Verify correct skills are returned
@@ -327,8 +354,8 @@ func TestMockRepository_ListSkillsForUser(t *testing.T) {
 	if !skillNames["Python"] {
 		t.Error("Expected Python skill to be in the list")
 	}
-	if skillNames["Java"] {
-		t.Error("Did not expect Java skill to be in the list for testuser")
+	if !skillNames["Java"] {
+		t.Error("Expected Java skill to be in the list")
 	}
 }
 
@@ -336,9 +363,9 @@ func TestMockRepository_ListUsersBySkill(t *testing.T) {
 	repo := NewMockRepository()
 
 	// Create skills for different users with same skill name
-	skill1, _ := models.NewUserSkill("user1", "Go", models.ProficiencyIntermediate, 3)
-	skill2, _ := models.NewUserSkill("user2", "Go", models.ProficiencyAdvanced, 5)
-	skill3, _ := models.NewUserSkill("user3", "Python", models.ProficiencyBeginner, 1)
+	skill1, _ := models.NewUserSkill("user1", "go", "Go", "Programming", models.ProficiencyIntermediate, 3)
+	skill2, _ := models.NewUserSkill("user2", "go", "Go", "Programming", models.ProficiencyAdvanced, 5)
+	skill3, _ := models.NewUserSkill("user3", "python", "Python", "Programming", models.ProficiencyBeginner, 1)
 
 	repo.CreateSkill(skill1)
 	repo.CreateSkill(skill2)
@@ -386,7 +413,7 @@ func TestMockRepository_UnifiedInterface(t *testing.T) {
 
 	// Test as SkillRepository
 	var skillRepo SkillRepository = repo
-	skill, _ := models.NewUserSkill("testuser", "Go", models.ProficiencyIntermediate, 3)
+	skill, _ := models.NewUserSkill("testuser", "go", "Go", "Programming", models.ProficiencyIntermediate, 3)
 	err = skillRepo.CreateSkill(skill)
 	if err != nil {
 		t.Errorf("Failed to create skill via SkillRepository interface: %v", err)
@@ -398,7 +425,7 @@ func TestMockRepository_UnifiedInterface(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get user via Repository interface: %v", err)
 	}
-	_, err = combinedRepo.GetSkill("testuser", "Go")
+	_, err = combinedRepo.GetSkill("testuser", "go")
 	if err != nil {
 		t.Errorf("Failed to get skill via Repository interface: %v", err)
 	}

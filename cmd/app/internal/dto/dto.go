@@ -100,3 +100,35 @@ type UserSkillResponse struct {
 	Endorsements      int    `json:"endorsements"`
 	LastUsedDate      string `json:"last_used_date"`
 }
+
+// Master Skill Request DTOs
+
+// CreateMasterSkillRequest represents a request to create a master skill
+type CreateMasterSkillRequest struct {
+	SkillID     string   `json:"skill_id" validate:"required,min=1,max=50"`
+	SkillName   string   `json:"skill_name" validate:"required,min=1,max=100"`
+	Description string   `json:"description" validate:"max=500"`
+	Category    string   `json:"category" validate:"required,min=1,max=50"`
+	Tags        []string `json:"tags,omitempty"`
+}
+
+// UpdateMasterSkillRequest represents a request to update a master skill
+type UpdateMasterSkillRequest struct {
+	SkillName   string   `json:"skill_name,omitempty" validate:"omitempty,min=1,max=100"`
+	Description string   `json:"description,omitempty" validate:"omitempty,max=500"`
+	Category    string   `json:"category,omitempty" validate:"omitempty,min=1,max=50"`
+	Tags        []string `json:"tags,omitempty"`
+}
+
+// Master Skill Response DTOs
+
+// MasterSkillResponse represents a master skill in responses
+type MasterSkillResponse struct {
+	SkillID     string   `json:"skill_id"`
+	SkillName   string   `json:"skill_name"`
+	Description string   `json:"description"`
+	Category    string   `json:"category"`
+	Tags        []string `json:"tags,omitempty"`
+	CreatedAt   string   `json:"created_at"`
+	UpdatedAt   string   `json:"updated_at"`
+}

@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"time"
 
 	apperrors "github.com/hackmajoris/glad/cmd/app/internal/errors"
@@ -45,7 +44,7 @@ func (r *DynamoDBRepository) CreateUser(user *models.User) error {
 	input := &dynamodb.PutItemInput{
 		TableName:           aws.String(TableName),
 		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(PK) AND attribute_not_exists(SK)"),
+		ConditionExpression: aws.String("attribute_not_exists(entity_id)"),
 	}
 
 	_, err = r.client.PutItem(input)
@@ -65,25 +64,24 @@ func (r *DynamoDBRepository) GetUser(username string) (*models.User, error) {
 
 	log.Debug("Starting user retrieval")
 
-	pk := fmt.Sprintf("USER#%s", username)
-	sk := "PROFILE"
+	entityID := models.BuildUserEntityID(username)
+	log.Info("Attempting to retrieve user", "entity_id", entityID, "table", TableName)
 
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"PK": {S: aws.String(pk)},
-			"SK": {S: aws.String(sk)},
+			"entity_id": {S: aws.String(entityID)},
 		},
 	}
 
 	result, err := r.client.GetItem(input)
 	if err != nil {
-		log.Error("Failed to get user from DynamoDB", "error", err.Error(), "duration", time.Since(start))
+		log.Error("Failed to get user from DynamoDB", "error", err.Error(), "entity_id", entityID, "duration", time.Since(start))
 		return nil, err
 	}
 
 	if result.Item == nil {
-		log.Debug("User not found", "duration", time.Since(start))
+		log.Info("User not found in DynamoDB", "entity_id", entityID, "duration", time.Since(start))
 		return nil, apperrors.ErrUserNotFound
 	}
 
@@ -105,16 +103,14 @@ func (r *DynamoDBRepository) UserExists(username string) (bool, error) {
 
 	log.Debug("Checking if user exists")
 
-	pk := fmt.Sprintf("USER#%s", username)
-	sk := "PROFILE"
+	entityID := models.BuildUserEntityID(username)
 
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"PK": {S: aws.String(pk)},
-			"SK": {S: aws.String(sk)},
+			"entity_id": {S: aws.String(entityID)},
 		},
-		ProjectionExpression: aws.String("PK"),
+		ProjectionExpression: aws.String("entity_id"),
 	}
 
 	result, err := r.client.GetItem(input)
@@ -148,7 +144,7 @@ func (r *DynamoDBRepository) UpdateUser(user *models.User) error {
 	input := &dynamodb.PutItemInput{
 		TableName:           aws.String(TableName),
 		Item:                item,
-		ConditionExpression: aws.String("attribute_exists(PK) AND attribute_exists(SK)"),
+		ConditionExpression: aws.String("attribute_exists(entity_id)"),
 	}
 
 	_, err = r.client.PutItem(input)
@@ -168,17 +164,17 @@ func (r *DynamoDBRepository) ListUsers() ([]*models.User, error) {
 
 	log.Debug("Starting users list retrieval")
 
-	// Use Scan with filter for EntityType = "User" and SK = "PROFILE"
-	input := &dynamodb.ScanInput{
-		TableName:        aws.String(TableName),
-		FilterExpression: aws.String("EntityType = :entityType AND SK = :sk"),
+	// Use Scan with filter for EntityType = "User"
+	input := &dynamodb.QueryInput{
+		TableName:              aws.String(TableName),
+		IndexName:              aws.String(GSIByEntityType),
+		KeyConditionExpression: aws.String("EntityType = :entityType"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":entityType": {S: aws.String("User")},
-			":sk":         {S: aws.String("PROFILE")},
 		},
 	}
 
-	result, err := r.client.Scan(input)
+	result, err := r.client.Query(input)
 	if err != nil {
 		log.Error("Failed to scan users table", "error", err.Error(), "duration", time.Since(start))
 		return nil, err

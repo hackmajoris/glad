@@ -7,15 +7,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-const (
-	// TableName is the single table for all entities
-	TableName = "glad-entities"
-
-	// GSI1Name GSI names
-	GSI1Name = "GSI1"
-)
-
-// DynamoDBRepository implements Repository using DynamoDB single table design
+// DynamoDBRepository implements all repository interfaces using DynamoDB single table design
+// It provides implementations for:
+// - UserRepository (user management)
+// - MasterSkillRepository (master skills)
+// - SkillRepository (user skills)
 type DynamoDBRepository struct {
 	client *dynamodb.DynamoDB
 }

@@ -110,6 +110,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create unified mock repository
 			mockRepo := database.NewMockRepository()
+			masterSkillsRepo := database.NewMockRepository()
 
 			if tt.setupRepo != nil {
 				tt.setupRepo(mockRepo)
@@ -118,7 +119,7 @@ func TestHandler_GetCurrentUser(t *testing.T) {
 			// Create services with mock repository
 			tokenService := auth.NewTokenService(testConfig())
 			userService := service.NewUserService(mockRepo, tokenService)
-			skillService := service.NewSkillService(mockRepo)
+			skillService := service.NewSkillService(mockRepo, masterSkillsRepo)
 
 			// Create handler
 			h := New(userService, skillService)
@@ -178,7 +179,8 @@ func TestHandler_GetCurrentUser_TimestampFormat(t *testing.T) {
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(mockRepo, tokenService)
 	mockRepository := database.NewMockRepository()
-	skillService := service.NewSkillService(mockRepository)
+	masterSkillRepository := database.NewMockRepository()
+	skillService := service.NewSkillService(mockRepository, masterSkillRepository)
 	h := New(userService, skillService)
 
 	request := events.APIGatewayProxyRequest{
@@ -226,7 +228,8 @@ func TestHandler_GetCurrentUser_DoesNotExposePassword(t *testing.T) {
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(mockRepo, tokenService)
 	skillMockRepo := database.NewMockRepository()
-	skillService := service.NewSkillService(skillMockRepo)
+	masterSkillMockRepo := database.NewMockRepository()
+	skillService := service.NewSkillService(skillMockRepo, masterSkillMockRepo)
 	h := New(userService, skillService)
 
 	request := events.APIGatewayProxyRequest{

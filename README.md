@@ -94,6 +94,10 @@ Request → Router → Middleware → Handler → Service → Repository → Dat
 - **DTO Pattern** - Separate request/response types from domain models
 - **Service Layer** - Business logic isolated from HTTP concerns
 
+## Data Model
+The Single Table Design in modeled using new Dynamo feature: Multi-Keys(composite keys) for GSI approach.
+Check: https://aws.amazon.com/blogs/database/multi-key-support-for-global-secondary-index-in-amazon-dynamodb/
+
 ## API Endpoints
 
 | Method | Path       | Auth | Description                  |

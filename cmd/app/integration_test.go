@@ -49,7 +49,7 @@ func SetupIntegrationTest() *IntegrationTestSuite {
 	userSkillsRepo := database.NewMockRepository()
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(userRepo, tokenService)
-	userSkillsService := service.NewSkillService(userSkillsRepo)
+	userSkillsService := service.NewSkillService(userSkillsRepo, userSkillsRepo) // Pass both SkillRepository and MasterSkillRepository
 	apiHandler := handler.New(userService, userSkillsService)
 	authMiddleware := middleware.NewAuthMiddleware(tokenService)
 
@@ -112,7 +112,9 @@ func TestFullUserJourney(t *testing.T) {
 		"username": "testuser1",
 		"password": "password123",
 	}
+
 	loginResp := makeHTTPRequest(t, "POST", baseURL+"/login", loginPayload, "")
+
 	if loginResp.StatusCode != 200 {
 		t.Fatalf("Expected status 200 for login, got %d. Response: %s", loginResp.StatusCode, loginResp.Body)
 	}
@@ -120,6 +122,7 @@ func TestFullUserJourney(t *testing.T) {
 	// Extract token
 	var loginResponse map[string]interface{}
 	err := json.Unmarshal([]byte(loginResp.Body), &loginResponse)
+
 	if err != nil {
 		t.Fatalf("Failed to parse login response: %v", err)
 	}
@@ -164,6 +167,7 @@ func TestFullUserJourney(t *testing.T) {
 	// Step 5: List users
 	t.Log("5. Listing users...")
 	listResp := makeHTTPRequest(t, "GET", baseURL+"/users", nil, token)
+
 	if listResp.StatusCode != 200 {
 		t.Fatalf("Expected status 200 for list users, got %d. Response: %s", listResp.StatusCode, listResp.Body)
 	}

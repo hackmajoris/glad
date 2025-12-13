@@ -21,25 +21,37 @@ var (
 
 // SkillService handles skill business logic
 type SkillService struct {
-	repo database.SkillRepository
+	repo            database.SkillRepository
+	masterSkillRepo database.MasterSkillRepository
 }
 
 // NewSkillService creates a new SkillService
-func NewSkillService(repo database.SkillRepository) *SkillService {
+func NewSkillService(repo database.SkillRepository, masterSkillRepo database.MasterSkillRepository) *SkillService {
 	return &SkillService{
-		repo: repo,
+		repo:            repo,
+		masterSkillRepo: masterSkillRepo,
 	}
 }
 
 // AddSkill adds a new skill to a user
+// The skillName parameter is used as the skillID to look up the master skill
 func (s *SkillService) AddSkill(username, skillName string, proficiencyLevel models.ProficiencyLevel, yearsOfExperience int, notes string) (*models.UserSkill, error) {
 	log := logger.WithComponent("service").With("operation", "AddSkill", "username", username, "skill", skillName)
 	start := time.Now()
 
 	log.Info("Processing add skill request")
 
-	// Create new skill
-	skill, err := models.NewUserSkill(username, skillName, proficiencyLevel, yearsOfExperience)
+	// Look up master skill to get skillID, skillName, and category
+	masterSkill, err := s.masterSkillRepo.GetMasterSkill(skillName)
+	if err != nil {
+		log.Error("Master skill not found", "error", err.Error(), "skill_id", skillName, "duration", time.Since(start))
+		return nil, apperrors.ErrSkillNotFound
+	}
+
+	log.Debug("Master skill found", "skill_id", masterSkill.SkillID, "skill_name", masterSkill.SkillName, "category", masterSkill.Category)
+
+	// Create new user skill with data from master skill
+	skill, err := models.NewUserSkill(username, masterSkill.SkillID, masterSkill.SkillName, masterSkill.Category, proficiencyLevel, yearsOfExperience)
 	if err != nil {
 		log.Error("Failed to create skill model", "error", err.Error(), "duration", time.Since(start))
 		return nil, err

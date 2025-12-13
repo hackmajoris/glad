@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	apperrors "github.com/hackmajoris/glad/cmd/app/internal/errors"
@@ -27,15 +26,20 @@ var validProficiencyLevels = map[ProficiencyLevel]bool{
 }
 
 // UserSkill represents a skill associated with a user (domain model)
-// This entity uses single table design with the following key structure:
-//   - PK: USER#<username>
-//   - SK: SKILL#<skill_name>
-//   - GSI1PK: SKILL#<skill_name>
-//   - GSI1SK: LEVEL#<proficiency>#USER#<username>
+// This entity uses single table design with multi-attribute composite keys:
+//   - entity_id: USERSKILL#<username>#<skill_id>
+//   - skill_id: Immutable skill reference (e.g., "python")
+//   - SkillName: Denormalized display name for GSI queries
+//   - Category: Denormalized from master Skill
+//
+// GSI SkillsByLevel uses: SkillName + ProficiencyLevel + YearsOfExperience + Username
+// GSI ByUser uses: Username + EntityType
 type UserSkill struct {
-	// Business attributes
+	// Business attributes - used directly in GSI composite keys
 	Username          string           `json:"username" dynamodbav:"Username"`
-	SkillName         string           `json:"skill_name" dynamodbav:"SkillName"`
+	SkillID           string           `json:"skill_id" dynamodbav:"skill_id"`    // Immutable reference
+	SkillName         string           `json:"skill_name" dynamodbav:"SkillName"` // Denormalized for GSI
+	Category          string           `json:"category" dynamodbav:"Category"`    // Denormalized from Skill
 	ProficiencyLevel  ProficiencyLevel `json:"proficiency_level" dynamodbav:"ProficiencyLevel"`
 	YearsOfExperience int              `json:"years_of_experience" dynamodbav:"YearsOfExperience"`
 	Endorsements      int              `json:"endorsements" dynamodbav:"Endorsements"`
@@ -44,23 +48,21 @@ type UserSkill struct {
 	CreatedAt         time.Time        `json:"created_at" dynamodbav:"CreatedAt"`
 	UpdatedAt         time.Time        `json:"updated_at" dynamodbav:"UpdatedAt"`
 
-	// DynamoDB system attributes for single table design
-	PK         string `json:"-" dynamodbav:"PK"`
-	SK         string `json:"-" dynamodbav:"SK"`
+	// DynamoDB attributes
+	EntityID   string `json:"-" dynamodbav:"entity_id"`
 	EntityType string `json:"entity_type" dynamodbav:"EntityType"`
-
-	// GSI1 attributes for cross-user skill queries
-	GSI1PK string `json:"-" dynamodbav:"GSI1PK,omitempty"`
-	GSI1SK string `json:"-" dynamodbav:"GSI1SK,omitempty"`
 }
 
 // NewUserSkill creates a new UserSkill with proper validation
-func NewUserSkill(username, skillName string, proficiencyLevel ProficiencyLevel, yearsOfExperience int) (*UserSkill, error) {
+// skillID: Immutable skill identifier (e.g., "python")
+// skillName: Display name (e.g., "Python") - denormalized from master Skill
+// category: Skill category (e.g., "Programming") - denormalized from master Skill
+func NewUserSkill(username, skillID, skillName, category string, proficiencyLevel ProficiencyLevel, yearsOfExperience int) (*UserSkill, error) {
 	if username == "" {
 		return nil, errors.ErrRequiredField
 	}
 
-	if skillName == "" {
+	if skillID == "" || skillName == "" {
 		return nil, errors.ErrRequiredField
 	}
 
@@ -75,7 +77,9 @@ func NewUserSkill(username, skillName string, proficiencyLevel ProficiencyLevel,
 	now := time.Now()
 	skill := &UserSkill{
 		Username:          username,
+		SkillID:           skillID,
 		SkillName:         skillName,
+		Category:          category,
 		ProficiencyLevel:  proficiencyLevel,
 		YearsOfExperience: yearsOfExperience,
 		Endorsements:      0,
@@ -91,20 +95,11 @@ func NewUserSkill(username, skillName string, proficiencyLevel ProficiencyLevel,
 	return skill, nil
 }
 
-// SetKeys configures the PK, SK, and GSI keys for DynamoDB single table design
 func (s *UserSkill) SetKeys() {
-	// Base table keys: Item collection pattern
-	// All skills for a user share the same PK
-	s.PK = fmt.Sprintf("USER#%s", s.Username)
-	s.SK = fmt.Sprintf("SKILL#%s", s.SkillName)
-
-	// Entity type for filtering
+	// Base table key: Unique identifier
+	s.EntityID = BuildUserSkillEntityID(s.Username, s.SkillID)
 	s.EntityType = "UserSkill"
-
-	// GSI1 keys: For querying users by skill
-	// Enables: "Find all users with skill X" or "Find all expert users with skill X"
-	s.GSI1PK = fmt.Sprintf("SKILL#%s", s.SkillName)
-	s.GSI1SK = fmt.Sprintf("LEVEL#%s#USER#%s", s.ProficiencyLevel, s.Username)
+	// No GSI concatenation needed - composite keys use actual attribute values!
 }
 
 // UpdateProficiency updates the skill proficiency level
@@ -115,9 +110,6 @@ func (s *UserSkill) UpdateProficiency(level ProficiencyLevel) error {
 
 	s.ProficiencyLevel = level
 	s.UpdatedAt = time.Now()
-
-	// Update GSI keys to reflect new proficiency
-	s.SetKeys()
 
 	return nil
 }

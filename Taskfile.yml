@@ -131,10 +131,10 @@ tasks:
   cdk:deploy:
     desc: 'Deploy infrastructure to AWS'
     dir: 'deployments/app'
-    deps: [build:lambda]
+    deps: [ build:lambda ]
     cmds:
-      - echo 'Deploying to AWS...'
-      - cdk deploy --require-approval never
+      - echo 'Deploying to AWS with profile {{.profile | default "default"}}'
+      - cdk deploy --require-approval never --profile {{.profile | default "default"}}
       - echo 'Deployment completed!'
 
   cdk:destroy:
@@ -154,7 +154,17 @@ tasks:
   # Full deployment workflow
   deploy:
     desc: 'Full deployment workflow (test, build, deploy)'
-    deps: [test, build:lambda, cdk:deploy]
+
+    cmds:
+      - echo "running command with args - {{.AWS_PROFILE}}"
+      - task: test
+      - task: build:lambda
+      - task: cdk:deploy
+        vars:
+          profile:
+            sh: echo {{.AWS_PROFILE | default "default"}}
+    requires:
+      vars: [AWS_PROFILE]
 
   deploy:diff:
     desc: 'Preview deployment changes'

@@ -49,7 +49,7 @@ func SetupIntegrationTest() *IntegrationTestSuite {
 	userSkillsRepo := database.NewMockRepository()
 	tokenService := auth.NewTokenService(testConfig())
 	userService := service.NewUserService(userRepo, tokenService)
-	userSkillsService := service.NewSkillService(userSkillsRepo)
+	userSkillsService := service.NewSkillService(userSkillsRepo, userSkillsRepo) // Pass both SkillRepository and MasterSkillRepository
 	apiHandler := handler.New(userService, userSkillsService)
 	authMiddleware := middleware.NewAuthMiddleware(tokenService)
 

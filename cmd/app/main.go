@@ -25,14 +25,16 @@ func main() {
 
 	// Initialize services
 	userService := service.NewUserService(repo, tokenService)
-	skillService := service.NewSkillService(repo)
+	skillService := service.NewSkillService(repo, repo) // repo implements both SkillRepository and MasterSkillRepository
+	masterSkillService := service.NewMasterSkillService(repo)
 
-	// Initialize handler
+	// Initialize handlers
 	apiHandler := handler.New(userService, skillService)
+	masterSkillHandler := handler.NewMasterSkillHandler(masterSkillService)
 	authMiddleware := middleware.NewAuthMiddleware(tokenService)
 
 	// Setup router
-	r := setupRouter(apiHandler, authMiddleware)
+	r := setupRouter(apiHandler, masterSkillHandler, authMiddleware)
 
 	// Start Lambda
 	lambda.Start(func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -41,7 +43,7 @@ func main() {
 	})
 }
 
-func setupRouter(h *handler.Handler, auth *middleware.AuthMiddleware) *router.Router {
+func setupRouter(h *handler.Handler, msh *handler.MasterSkillHandler, auth *middleware.AuthMiddleware) *router.Router {
 	r := router.New()
 
 	// Public routes
@@ -54,7 +56,14 @@ func setupRouter(h *handler.Handler, auth *middleware.AuthMiddleware) *router.Ro
 	r.PUT("/user", h.UpdateUser, auth.RequireAuth())
 	r.GET("/users", h.ListUsers, auth.RequireAuth())
 
-	// Protected routes - Skill Management
+	// Protected routes - Master Skill Management
+	r.POST("/master-skills", msh.CreateMasterSkill, auth.RequireAuth())
+	r.GET("/master-skills", msh.ListMasterSkills, auth.RequireAuth())
+	r.GET("/master-skills/{skillID}", msh.GetMasterSkill, auth.RequireAuth())
+	r.PUT("/master-skills/{skillID}", msh.UpdateMasterSkill, auth.RequireAuth())
+	r.DELETE("/master-skills/{skillID}", msh.DeleteMasterSkill, auth.RequireAuth())
+
+	// Protected routes - User Skill Management
 	// Manage skills for a specific user
 	r.POST("/users/{username}/skills", h.AddSkill, auth.RequireAuth())
 	r.GET("/users/{username}/skills", h.ListSkillsForUser, auth.RequireAuth())
@@ -62,7 +71,7 @@ func setupRouter(h *handler.Handler, auth *middleware.AuthMiddleware) *router.Ro
 	r.PUT("/users/{username}/skills/{skillName}", h.UpdateSkill, auth.RequireAuth())
 	r.DELETE("/users/{username}/skills/{skillName}", h.DeleteSkill, auth.RequireAuth())
 
-	// Query users by skill (cross-user queries using GSI1)
+	// Query users by skill (cross-user queries using GSI)
 	r.GET("/skills/{skillName}/users", h.ListUsersBySkill, auth.RequireAuth())
 
 	return r

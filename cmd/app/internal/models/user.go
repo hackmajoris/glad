@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	apperrors "github.com/hackmajoris/glad/cmd/app/internal/errors"
@@ -23,10 +22,9 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at" dynamodbav:"CreatedAt"`
 	UpdatedAt    time.Time `json:"updated_at" dynamodbav:"UpdatedAt"`
 
-	// DynamoDB system attributes for single table design
-	PK         string `json:"-" dynamodbav:"PK"`
-	SK         string `json:"-" dynamodbav:"SK"`
-	EntityType string `json:"entity_type" dynamodbav:"EntityType"`
+	// DynamoDB attributes
+	EntityID   string `json:"-" dynamodbav:"entity_id"`            // Unique: USER#<username>
+	EntityType string `json:"entity_type" dynamodbav:"EntityType"` // "User"
 }
 
 // NewUser creates a new User with the given credentials
@@ -56,11 +54,8 @@ func NewUser(username, name, password string) (*User, error) {
 	return user, nil
 }
 
-// SetKeys configures the PK and SK for DynamoDB single table design
 func (u *User) SetKeys() {
-	// Base table keys: User profile uses a fixed SK of "PROFILE"
-	u.PK = fmt.Sprintf("USER#%s", u.Username)
-	u.SK = "PROFILE"
+	u.EntityID = BuildUserEntityID(u.Username)
 	u.EntityType = "User"
 }
 

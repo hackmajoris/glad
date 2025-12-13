@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	UserRepository
 	SkillRepository
+	MasterSkillRepository
 }
 
 // NewRepository creates the appropriate repository implementation based on configuration

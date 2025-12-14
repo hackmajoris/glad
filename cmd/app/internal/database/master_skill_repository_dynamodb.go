@@ -133,7 +133,7 @@ func (r *DynamoDBRepository) DeleteMasterSkill(skillID string) error {
 	_, err := r.client.DeleteItem(input)
 	if err != nil {
 		log.Error("Failed to delete master skill from DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return apperrors.ErrSkillNotFound
+		return err
 	}
 
 	log.Info("Master skill deleted successfully", "duration", time.Since(start))

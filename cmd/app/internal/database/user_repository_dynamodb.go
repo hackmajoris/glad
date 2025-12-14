@@ -163,7 +163,7 @@ func (r *DynamoDBRepository) ListUsers() ([]*models.User, error) {
 
 	result, err := r.client.Query(input)
 	if err != nil {
-		log.Error("Failed to scan users table", "error", err.Error(), "duration", time.Since(start))
+		log.Error("Failed to query users table", "error", err.Error(), "duration", time.Since(start))
 		return nil, err
 	}
 

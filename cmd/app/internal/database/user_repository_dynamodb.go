@@ -151,7 +151,7 @@ func (r *DynamoDBRepository) ListUsers() ([]*models.User, error) {
 
 	log.Debug("Starting users list retrieval")
 
-	// Use Scan with filter for EntityType = "User"
+	// Use Query on GSI for EntityType = "User"
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
 		IndexName:              aws.String(GSIByEntityType),

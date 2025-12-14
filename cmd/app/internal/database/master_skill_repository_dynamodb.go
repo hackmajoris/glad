@@ -106,7 +106,7 @@ func (r *DynamoDBRepository) UpdateMasterSkill(skill *models.Skill) error {
 	_, err = r.client.PutItem(input)
 	if err != nil {
 		log.Error("Failed to update master skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return apperrors.ErrSkillNotFound
+		return err
 	}
 
 	log.Info("Master skill updated successfully", "duration", time.Since(start))

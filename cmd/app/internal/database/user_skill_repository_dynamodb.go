@@ -35,9 +35,10 @@ func (r *DynamoDBRepository) CreateSkill(skill *models.UserSkill) error {
 	}
 
 	_, err = r.client.PutItem(input)
+	_, err = r.client.PutItem(input)
 	if err != nil {
 		log.Error("Failed to create skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return apperrors.ErrSkillAlreadyExists
+		return err
 	}
 
 	log.Info("Skill created successfully", "duration", time.Since(start))

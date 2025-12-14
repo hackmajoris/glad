@@ -296,7 +296,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "skill_name": "Amazon Web Services",
+  "skill_name": "aws",
   "proficiency_level": "Intermediate",
   "years_of_experience": 3,
   "notes": "Lambda, DynamoDB, API Gateway"
@@ -407,7 +407,7 @@ Content-Type: application/json
 }
 
 ### 4.16 Update User Skill - John Doe - AWS (only notes)
-PUT {{API_URL}}/users/john_doe/skills/Amazon Web Services
+PUT {{API_URL}}/users/john_doe/skills/aws
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -738,10 +738,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "skill_id": "test_skill_1",
-  "skill_name": "Test Skill 1",
+  "skill_id": "test-skill-1",
+  "skill_name": "Test Skill",
   "description": "Performance test skill 1",
-  "category": "Testing"
+  "category": "Programming"
 }
 
 ### 9.2 Create Multiple Master Skills - Skill 2
@@ -750,10 +750,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "skill_id": "test_skill_2",
+  "skill_id": "test-skill-2",
   "skill_name": "Test Skill 2",
   "description": "Performance test skill 2",
-  "category": "Testing"
+  "category": "Programming"
 }
 
 ### 9.3 Create Multiple Master Skills - Skill 3
@@ -762,10 +762,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "skill_id": "test_skill_3",
+  "skill_id": "test-skill",
   "skill_name": "Test Skill 3",
   "description": "Performance test skill 3",
-  "category": "Testing"
+  "category": "Programming"
 }
 
 ###############################################################################

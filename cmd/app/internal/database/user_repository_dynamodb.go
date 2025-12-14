@@ -57,7 +57,8 @@ func (r *DynamoDBRepository) GetUser(username string) (*models.User, error) {
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"entity_id": {S: aws.String(entityID)},
+			"EntityType": {S: aws.String("User")},
+			"entity_id":  {S: aws.String(entityID)},
 		},
 	}
 
@@ -95,7 +96,8 @@ func (r *DynamoDBRepository) UserExists(username string) (bool, error) {
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"entity_id": {S: aws.String(entityID)},
+			"EntityType": {S: aws.String("User")},
+			"entity_id":  {S: aws.String(entityID)},
 		},
 		ProjectionExpression: aws.String("entity_id"),
 	}
@@ -144,17 +146,15 @@ func (r *DynamoDBRepository) UpdateUser(user *models.User) error {
 	return nil
 }
 
-// ListUsers retrieves all users from DynamoDB using Query on EntityType
+// ListUsers retrieves all users from DynamoDB using Query on ByEntityType GSI
 func (r *DynamoDBRepository) ListUsers() ([]*models.User, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsers")
 	start := time.Now()
 
 	log.Debug("Starting users list retrieval")
 
-	// Use Query on GSI for EntityType = "User"
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
-		IndexName:              aws.String(GSIByEntityType),
 		KeyConditionExpression: aws.String("EntityType = :entityType"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":entityType": {S: aws.String("User")},
@@ -177,6 +177,6 @@ func (r *DynamoDBRepository) ListUsers() ([]*models.User, error) {
 		users = append(users, &user)
 	}
 
-	log.Info("Users retrieved successfully", "count", len(users), "scanned_count", *result.ScannedCount, "duration", time.Since(start))
+	log.Info("Users retrieved successfully", "count", len(users), "duration", time.Since(start))
 	return users, nil
 }

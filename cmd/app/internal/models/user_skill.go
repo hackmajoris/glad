@@ -49,8 +49,9 @@ type UserSkill struct {
 	UpdatedAt         time.Time        `json:"updated_at" dynamodbav:"UpdatedAt"`
 
 	// DynamoDB attributes
-	EntityID   string `json:"-" dynamodbav:"entity_id"`
-	EntityType string `json:"entity_type" dynamodbav:"EntityType"`
+	EntityID           string `json:"-" dynamodbav:"entity_id"`
+	EntityType         string `json:"entity_type" dynamodbav:"EntityType"`
+	SkillCompositeSort string `json:"-" dynamodbav:"SkillCompositeSort"`
 }
 
 // NewUserSkill creates a new UserSkill with proper validation
@@ -99,7 +100,8 @@ func (s *UserSkill) SetKeys() {
 	// Base table key: Unique identifier
 	s.EntityID = BuildUserSkillEntityID(s.Username, s.SkillID)
 	s.EntityType = "UserSkill"
-	// No GSI concatenation needed - composite keys use actual attribute values!
+	// Composite sort key: ProficiencyLevel#Username
+	s.SkillCompositeSort = string(s.ProficiencyLevel) + "#" + s.Username
 }
 
 // UpdateProficiency updates the skill proficiency level

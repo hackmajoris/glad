@@ -134,27 +134,6 @@ func (m *MockRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill
 	return skills, nil
 }
 
-// QueryUserSkillsBySkillID retrieves all users with a specific skill from memory
-func (m *MockRepository) QueryUserSkillsBySkillID(skillName string) ([]*models.UserSkill, error) {
-	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "skill", skillName, "repository", "mock")
-	start := time.Now()
-
-	log.Debug("Starting users list retrieval by skill from mock repository")
-
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
-	var skills []*models.UserSkill
-	for _, skill := range m.skills {
-		if skill.SkillName == skillName {
-			skills = append(skills, skill)
-		}
-	}
-
-	log.Info("Users retrieved successfully by skill from mock repository", "count", len(skills), "duration", time.Since(start))
-	return skills, nil
-}
-
 // ListUsersBySkillAndLevel retrieves all users with a specific skill and proficiency level from memory
 func (m *MockRepository) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel, "repository", "mock")

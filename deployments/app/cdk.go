@@ -20,82 +20,33 @@ type CdkStackProps struct {
 func createEntitiesTable(stack awscdk.Stack, id *string, environment string) awsdynamodb.TableV2 {
 	entitiesTable := awsdynamodb.NewTableV2(stack, id, &awsdynamodb.TablePropsV2{
 		TableName: jsii.String("glad-entities"),
-		// Partition Key: PK (stores entity identifier)
+		// Partition Key: EntityType
 		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("EntityType"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		SortKey: &awsdynamodb.Attribute{
 			Name: jsii.String("entity_id"),
 			Type: awsdynamodb.AttributeType_STRING,
 		},
 
 		GlobalSecondaryIndexes: &[]*awsdynamodb.GlobalSecondaryIndexPropsV2{
-			// GSI1: Query skills by name, optionally filter by level
+			// GSI for skill-only queries
 			{
-				IndexName: jsii.String("SkillsByLevel"),
+				IndexName: jsii.String("BySkill"),
 				PartitionKey: &awsdynamodb.Attribute{
 					Name: jsii.String("SkillName"),
 					Type: awsdynamodb.AttributeType_STRING,
 				},
-				SortKey: &awsdynamodb.Attribute{
-					Name: jsii.String("ProficiencyLevel"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				ProjectionType: awsdynamodb.ProjectionType_INCLUDE,
-				NonKeyAttributes: jsii.Strings(
-					"EntityType",
-					"Notes",
-					"Email",
-					"skill_id",
-					"Category",
-					"YearsOfExperience",
-					"Username",
-				),
-			},
-			// GSI2: Query all items for a user (profile + skills)
-			{
-				IndexName: jsii.String("ByUser"),
-				PartitionKey: &awsdynamodb.Attribute{
-					Name: jsii.String("Username"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				SortKey: &awsdynamodb.Attribute{
-					Name: jsii.String("EntityType"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-			},
-			// GSI for querying skills:
-			{
-				IndexName: jsii.String("SkillsByCategory"),
-				PartitionKey: &awsdynamodb.Attribute{
-					Name: jsii.String("EntityType"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				SortKey: &awsdynamodb.Attribute{
-					Name: jsii.String("Category"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-			},
-
-			// GSI for query on EntityType
-			{
-				IndexName: jsii.String("ByEntityType"),
-				PartitionKey: &awsdynamodb.Attribute{
-					Name: jsii.String("EntityType"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				SortKey: &awsdynamodb.Attribute{
-					Name: jsii.String("SkillName"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-			},
-			// GSI: BySkillID - Query UserSkills by skill_id (for syncing denormalized data)
-			{
-				IndexName: jsii.String("BySkillID"),
-				PartitionKey: &awsdynamodb.Attribute{
-					Name: jsii.String("skill_id"),
-					Type: awsdynamodb.AttributeType_STRING,
-				},
-				SortKey: &awsdynamodb.Attribute{
-					Name: jsii.String("Username"),
-					Type: awsdynamodb.AttributeType_STRING,
+				SortKeys: &[]*awsdynamodb.Attribute{
+					{
+						Name: jsii.String("ProficiencyLevel"),
+						Type: awsdynamodb.AttributeType_STRING,
+					},
+					{
+						Name: jsii.String("Username"),
+						Type: awsdynamodb.AttributeType_STRING,
+					},
 				},
 			},
 		},
@@ -131,7 +82,6 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	// Add environment tag
 	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(ENVIRONMENT), nil)
 
-	entitiesTable := createEntitiesTable(stack, jsii.String(id+"-entities-table-"+ENVIRONMENT), ENVIRONMENT)
 	// Create Lambda
 	myFunc := awslambda.NewFunction(stack, jsii.String(id+"-go-func"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
@@ -141,7 +91,8 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 
 	myFunc.AddEnvironment(jsii.String("ENVIRONMENT"), jsii.String(ENVIRONMENT), nil)
 
-	// Grant Lambda read/write access to DynamoDB table
+	////  Create table | Grant Lambda read/write access to DynamoDB table
+	entitiesTable := createEntitiesTable(stack, jsii.String(id+"-entities-table-"+ENVIRONMENT), ENVIRONMENT)
 	entitiesTable.GrantReadWriteData(myFunc)
 
 	api := awsapigateway.NewRestApi(stack, jsii.String(id+"-api-gateway"), &awsapigateway.RestApiProps{

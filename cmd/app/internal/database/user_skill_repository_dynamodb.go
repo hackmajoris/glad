@@ -57,7 +57,8 @@ func (r *DynamoDBRepository) GetSkill(username, skillID string) (*models.UserSki
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"entity_id": {S: aws.String(entityID)},
+			"EntityType": {S: aws.String("UserSkill")},
+			"entity_id":  {S: aws.String(entityID)},
 		},
 	}
 
@@ -128,7 +129,8 @@ func (r *DynamoDBRepository) DeleteSkill(username, skillID string) error {
 	input := &dynamodb.DeleteItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"entity_id": {S: aws.String(entityID)},
+			"EntityType": {S: aws.String("UserSkill")},
+			"entity_id":  {S: aws.String(entityID)},
 		},
 		ConditionExpression: aws.String("attribute_exists(entity_id)"),
 	}
@@ -152,11 +154,10 @@ func (r *DynamoDBRepository) ListSkillsForUser(username string) ([]*models.UserS
 
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
-		IndexName:              aws.String(GSIByUser),
-		KeyConditionExpression: aws.String("Username = :username AND EntityType = :entityType"),
+		KeyConditionExpression: aws.String("EntityType = :entityType AND begins_with(entity_id, :userPrefix)"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":username":   {S: aws.String(username)},
 			":entityType": {S: aws.String("UserSkill")},
+			":userPrefix": {S: aws.String("USERSKILL#" + username + "#")},
 		},
 	}
 
@@ -180,7 +181,7 @@ func (r *DynamoDBRepository) ListSkillsForUser(username string) ([]*models.UserS
 	return skills, nil
 }
 
-// ListUsersBySkill retrieves all users who have a specific skill using GSI SkillsByLevel
+// ListUsersBySkill retrieves all users who have a specific skill using GSI BySkill
 func (r *DynamoDBRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "skill", skillName)
 	start := time.Now()
@@ -189,7 +190,7 @@ func (r *DynamoDBRepository) ListUsersBySkill(skillName string) ([]*models.UserS
 
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
-		IndexName:              aws.String(GSISkillsByLevel),
+		IndexName:              aws.String(GSIBySkill),
 		KeyConditionExpression: aws.String("SkillName = :skillName"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":skillName": {S: aws.String(skillName)},
@@ -217,7 +218,6 @@ func (r *DynamoDBRepository) ListUsersBySkill(skillName string) ([]*models.UserS
 }
 
 // ListUsersBySkillAndLevel retrieves users with a specific skill at a specific proficiency level
-// Uses composite partition key on SkillName + ProficiencyLevel
 func (r *DynamoDBRepository) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
 	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel)
 	start := time.Now()
@@ -226,7 +226,7 @@ func (r *DynamoDBRepository) ListUsersBySkillAndLevel(skillName string, proficie
 
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
-		IndexName:              aws.String(GSISkillsByLevel),
+		IndexName:              aws.String(GSIBySkill),
 		KeyConditionExpression: aws.String("SkillName = :skillName AND ProficiencyLevel = :level"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":skillName": {S: aws.String(skillName)},
@@ -251,42 +251,5 @@ func (r *DynamoDBRepository) ListUsersBySkillAndLevel(skillName string, proficie
 	}
 
 	log.Info("Users with skill and level retrieved successfully", "skill", skillName, "level", proficiencyLevel, "count", len(skills), "duration", time.Since(start))
-	return skills, nil
-}
-
-// QueryUserSkillsBySkillID retrieves all UserSkills that reference a specific skill_id
-// Used when syncing denormalized data after master skill updates
-func (r *DynamoDBRepository) QueryUserSkillsBySkillID(skillID string) ([]*models.UserSkill, error) {
-	log := logger.WithComponent("database").With("operation", "QueryUserSkillsBySkillID", "skill_id", skillID)
-	start := time.Now()
-
-	log.Debug("Starting UserSkills retrieval by skill_id")
-
-	input := &dynamodb.QueryInput{
-		TableName:              aws.String(TableName),
-		IndexName:              aws.String(GSIBySkillID),
-		KeyConditionExpression: aws.String("skill_id = :skillID"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":skillID": {S: aws.String(skillID)},
-		},
-	}
-
-	result, err := r.client.Query(input)
-	if err != nil {
-		log.Error("Failed to query UserSkills by skill_id", "error", err.Error(), "duration", time.Since(start))
-		return nil, err
-	}
-
-	var skills []*models.UserSkill
-	for i, item := range result.Items {
-		var skill models.UserSkill
-		if err := dynamodbattribute.UnmarshalMap(item, &skill); err != nil {
-			log.Error("Failed to unmarshal skill data", "error", err.Error(), "item_index", i, "duration", time.Since(start))
-			continue
-		}
-		skills = append(skills, &skill)
-	}
-
-	log.Info("UserSkills by skill_id retrieved successfully", "skill_id", skillID, "count", len(skills), "duration", time.Since(start))
 	return skills, nil
 }

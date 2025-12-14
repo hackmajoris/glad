@@ -55,7 +55,8 @@ func (r *DynamoDBRepository) GetMasterSkill(skillID string) (*models.Skill, erro
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"entity_id": {S: aws.String(entityID)},
+			"EntityType": {S: aws.String("Skill")},
+			"entity_id":  {S: aws.String(entityID)},
 		},
 	}
 
@@ -125,7 +126,8 @@ func (r *DynamoDBRepository) DeleteMasterSkill(skillID string) error {
 	input := &dynamodb.DeleteItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"entity_id": {S: aws.String(entityID)},
+			"EntityType": {S: aws.String("Skill")},
+			"entity_id":  {S: aws.String(entityID)},
 		},
 		ConditionExpression: aws.String("attribute_exists(entity_id)"),
 	}
@@ -147,10 +149,8 @@ func (r *DynamoDBRepository) ListMasterSkills() ([]*models.Skill, error) {
 
 	log.Debug("Starting master skills list retrieval")
 
-	// Use GSI for better performance instead of Scan
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
-		IndexName:              aws.String(GSIByEntityType),
 		KeyConditionExpression: aws.String("EntityType = :entityType"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":entityType": {S: aws.String("Skill")},

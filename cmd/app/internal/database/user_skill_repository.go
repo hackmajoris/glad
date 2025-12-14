@@ -11,5 +11,4 @@ type SkillRepository interface {
 	ListSkillsForUser(username string) ([]*models.UserSkill, error)
 	ListUsersBySkill(skillName string) ([]*models.UserSkill, error)
 	ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error)
-	QueryUserSkillsBySkillID(skillID string) ([]*models.UserSkill, error)
 }

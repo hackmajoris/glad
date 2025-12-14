@@ -42,6 +42,7 @@ tasks:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
       - echo 'Coverage report generated - coverage.html'
+      - go tool cover -html=coverage.out
 
   test:suite:
     desc: 'Run comprehensive test suite with detailed reporting'

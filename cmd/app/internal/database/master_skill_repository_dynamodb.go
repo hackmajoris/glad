@@ -36,7 +36,7 @@ func (r *DynamoDBRepository) CreateMasterSkill(skill *models.Skill) error {
 	_, err = r.client.PutItem(input)
 	if err != nil {
 		log.Error("Failed to create master skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return apperrors.ErrSkillAlreadyExists
+		return err
 	}
 
 	log.Info("Master skill created successfully", "duration", time.Since(start))

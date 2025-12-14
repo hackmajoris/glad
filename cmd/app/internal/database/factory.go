@@ -7,7 +7,8 @@ import (
 	"github.com/hackmajoris/glad/pkg/logger"
 )
 
-// Repository combines all repository interfaces for unified access
+// Repository combines all repository interfaces for unified access.
+// Both DynamoDBRepository and MockRepository implement this interface.
 type Repository interface {
 	UserRepository
 	SkillRepository

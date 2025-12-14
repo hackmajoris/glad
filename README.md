@@ -153,31 +153,32 @@ The unified `Repository` interface composes all entity repositories, allowing bo
 - If `ENVIRONMENT=development` or `DB_MOCK=true` → Mock
 - Default: DynamoDB
 
-## Data Model - Single Table Design with Multi-Key GSI
+## Data Model - Optimized Single Table Design
 
-The Single Table Design is modeled using DynamoDB's Multi-Key (composite keys) for GSI feature.
-Read more: https://aws.amazon.com/blogs/database/multi-key-support-for-global-secondary-index-in-amazon-dynamodb/
+Optimized single-table design using `EntityType` as partition key to minimize GSI usage and reduce costs while maintaining optimal query performance.
 
 ### Table: `glad-entities`
-- **Partition Key**: `entity_id` (STRING)
+- **Partition Key**: `EntityType` (STRING) - "User", "Skill", "UserSkill"
+- **Sort Key**: `entity_id` (STRING) - Unique entity identifier
 
 ### Entity ID Format (using `#` delimiter):
 - **Users**: `USER#<username>` (e.g., `USER#john`)
 - **User Skills**: `USERSKILL#<username>#<skill_id>` (e.g., `USERSKILL#john#python`)
 - **Master Skills**: `SKILL#<skill_id>` (e.g., `SKILL#python`)
 
-### Global Secondary Indexes (5 GSIs):
+### Global Secondary Index (1 GSI):
 
-1. **SkillsByLevel** - Query users by skill and proficiency level
-   - PK: `SkillName`, SK: `ProficiencyLevel`
-2. **ByUser** - Get all entities for a user
-   - PK: `Username`, SK: `EntityType`
-3. **SkillsByCategory** - Find skills by category
-   - PK: `EntityType`, SK: `Category`
-4. **ByEntityType** - Query all entities of a type
-   - PK: `EntityType`, SK: `SkillName`
-5. **BySkillID** - Find all users with a specific skill
-   - PK: `skill_id`, SK: `Username`
+1. **BySkill** - Consolidated skill queries with composite sort keys
+   - PK: `SkillName`
+   - SK: `ProficiencyLevel` + `Username` (multi-key sort)
+   - Supports both skill-only and skill+level queries
+
+### Query Patterns:
+- **List all users**: `EntityType = "User"` (main table)
+- **List all skills**: `EntityType = "Skill"` (main table)
+- **User's skills**: `EntityType = "UserSkill" AND begins_with(entity_id, "USERSKILL#john#")` (main table)
+- **Users with skill**: `SkillName = "Python"` (BySkill GSI)
+- **Users with skill at level**: `SkillName = "Python" AND ProficiencyLevel = "Expert"` (BySkill GSI)
 
 ## API Endpoints
 
@@ -471,7 +472,8 @@ Deployed resources (via AWS CDK in Go):
 
 ### DynamoDB Table
 - **Name**: `glad-entities`
-- **Single table** with 5 Global Secondary Indexes
+- **Optimized single table** with 1 Global Secondary Index
+- **Table Keys**: `EntityType` (PK) + `entity_id` (SK)
 - **DynamoDB Streams**: Enabled (NEW_AND_OLD_IMAGES)
 - **Capacity**: On-demand billing mode
 - **Point-in-time recovery**: Disabled (dev-friendly)

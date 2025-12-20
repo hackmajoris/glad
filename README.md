@@ -474,7 +474,6 @@ Deployed resources (via AWS CDK in Go):
 - **Name**: `glad-entities`
 - **Optimized single table** with 1 Global Secondary Index
 - **Table Keys**: `EntityType` (PK) + `entity_id` (SK)
-- **DynamoDB Streams**: Enabled (NEW_AND_OLD_IMAGES)
 - **Capacity**: On-demand billing mode
 - **Point-in-time recovery**: Disabled (dev-friendly)
 - **Removal policy**: DESTROY (dev-friendly)

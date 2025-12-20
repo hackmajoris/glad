@@ -114,8 +114,8 @@ func (m *MockRepository) ListSkillsForUser(username string) ([]*models.UserSkill
 }
 
 // ListUsersBySkill retrieves all users with a specific skill from memory
-func (m *MockRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill, error) {
-	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "skill", skillName, "repository", "mock")
+func (m *MockRepository) ListUsersBySkill(category, skillName string) ([]*models.UserSkill, error) {
+	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "category", category, "skill", skillName, "repository", "mock")
 	start := time.Now()
 
 	log.Debug("Starting users list retrieval by skill from mock repository")
@@ -125,7 +125,7 @@ func (m *MockRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill
 
 	var skills []*models.UserSkill
 	for _, skill := range m.skills {
-		if skill.SkillName == skillName {
+		if skill.Category == category && skill.SkillName == skillName {
 			skills = append(skills, skill)
 		}
 	}
@@ -135,8 +135,8 @@ func (m *MockRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill
 }
 
 // ListUsersBySkillAndLevel retrieves all users with a specific skill and proficiency level from memory
-func (m *MockRepository) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
-	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel, "repository", "mock")
+func (m *MockRepository) ListUsersBySkillAndLevel(category, skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
+	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "category", category, "skill", skillName, "level", proficiencyLevel, "repository", "mock")
 	start := time.Now()
 
 	log.Debug("Starting users list retrieval by skill and level from mock repository")
@@ -146,7 +146,7 @@ func (m *MockRepository) ListUsersBySkillAndLevel(skillName string, proficiencyL
 
 	var skills []*models.UserSkill
 	for _, skill := range m.skills {
-		if skill.SkillName == skillName && skill.ProficiencyLevel == proficiencyLevel {
+		if skill.Category == category && skill.SkillName == skillName && skill.ProficiencyLevel == proficiencyLevel {
 			skills = append(skills, skill)
 		}
 	}

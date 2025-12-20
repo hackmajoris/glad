@@ -179,14 +179,14 @@ func (s *SkillService) ListSkillsForUser(username string) ([]dto.SkillResponse, 
 	return result, nil
 }
 
-// ListUsersBySkill retrieves all users who have a specific skill
-func (s *SkillService) ListUsersBySkill(skillName string) ([]dto.UserSkillResponse, error) {
-	log := logger.WithComponent("service").With("operation", "ListUsersBySkill", "skill", skillName)
+// ListUsersBySkill retrieves all users who have a specific skill in a category
+func (s *SkillService) ListUsersBySkill(category, skillName string) ([]dto.UserSkillResponse, error) {
+	log := logger.WithComponent("service").With("operation", "ListUsersBySkill", "category", category, "skill", skillName)
 	start := time.Now()
 
 	log.Info("Retrieving users by skill")
 
-	skills, err := s.repo.ListUsersBySkill(skillName)
+	skills, err := s.repo.ListUsersBySkill(category, skillName)
 	if err != nil {
 		log.Error("Failed to retrieve users by skill", "error", err.Error(), "duration", time.Since(start))
 		return nil, err
@@ -205,18 +205,18 @@ func (s *SkillService) ListUsersBySkill(skillName string) ([]dto.UserSkillRespon
 		}
 	}
 
-	log.Info("Users with skill retrieved successfully", "skill", skillName, "count", len(result), "duration", time.Since(start))
+	log.Info("Users with skill retrieved successfully", "category", category, "skill", skillName, "count", len(result), "duration", time.Since(start))
 	return result, nil
 }
 
-// ListUsersBySkillAndLevel retrieves users with a skill at a specific proficiency level
-func (s *SkillService) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]dto.UserSkillResponse, error) {
-	log := logger.WithComponent("service").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel)
+// ListUsersBySkillAndLevel retrieves users with a skill at a specific proficiency level in a category
+func (s *SkillService) ListUsersBySkillAndLevel(category, skillName string, proficiencyLevel models.ProficiencyLevel) ([]dto.UserSkillResponse, error) {
+	log := logger.WithComponent("service").With("operation", "ListUsersBySkillAndLevel", "category", category, "skill", skillName, "level", proficiencyLevel)
 	start := time.Now()
 
 	log.Info("Retrieving users by skill and level")
 
-	skills, err := s.repo.ListUsersBySkillAndLevel(skillName, proficiencyLevel)
+	skills, err := s.repo.ListUsersBySkillAndLevel(category, skillName, proficiencyLevel)
 	if err != nil {
 		log.Error("Failed to retrieve users by skill and level", "error", err.Error(), "duration", time.Since(start))
 		return nil, err
@@ -235,6 +235,6 @@ func (s *SkillService) ListUsersBySkillAndLevel(skillName string, proficiencyLev
 		}
 	}
 
-	log.Info("Users with skill and level retrieved successfully", "skill", skillName, "level", proficiencyLevel, "count", len(result), "duration", time.Since(start))
+	log.Info("Users with skill and level retrieved successfully", "category", category, "skill", skillName, "level", proficiencyLevel, "count", len(result), "duration", time.Since(start))
 	return result, nil
 }

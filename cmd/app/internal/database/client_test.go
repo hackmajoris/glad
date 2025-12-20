@@ -371,8 +371,8 @@ func TestMockRepository_ListUsersBySkill(t *testing.T) {
 	repo.CreateSkill(skill2)
 	repo.CreateSkill(skill3)
 
-	// Test list users with Go skill
-	skills, err := repo.ListUsersBySkill("Go")
+	// Test list users with Go skill in Programming category
+	skills, err := repo.ListUsersBySkill("Programming", "Go")
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}

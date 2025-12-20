@@ -174,7 +174,7 @@ Here's how UserSkill items appear in the GSI (sorted by composite sort key):
 
 ```bash
 # AWS Profile
-export AWS_PROFILE=passbrains-ilisa-amplify
+export AWS_PROFILE={YOUR_AWS_PROFILE_NAME}
 
 # Table and Index names
 TABLE_NAME="glad-entities"
@@ -189,7 +189,7 @@ GSI_NAME="BySkill"
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType" \
   --expression-attribute-values '{
     ":entityType": {"S": "User"}
@@ -202,7 +202,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType" \
   --expression-attribute-values '{
     ":entityType": {"S": "Skill"}
@@ -215,7 +215,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType" \
   --expression-attribute-values '{
     ":entityType": {"S": "UserSkill"}
@@ -228,7 +228,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType AND entity_id = :entityId" \
   --expression-attribute-values '{
     ":entityType": {"S": "User"},
@@ -242,7 +242,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType AND entity_id = :entityId" \
   --expression-attribute-values '{
     ":entityType": {"S": "Skill"},
@@ -256,7 +256,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType AND entity_id = :entityId" \
   --expression-attribute-values '{
     ":entityType": {"S": "UserSkill"},
@@ -270,7 +270,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType AND begins_with(entity_id, :prefix)" \
   --expression-attribute-values '{
     ":entityType": {"S": "UserSkill"},
@@ -288,7 +288,7 @@ aws dynamodb query \
              
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category" \
   --expression-attribute-values '{
@@ -307,7 +307,7 @@ aws dynamodb query \
 //todo
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName" \
   --expression-attribute-values '{
@@ -326,7 +326,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --expression-attribute-values '{
@@ -348,7 +348,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level AND YearsOfExperience >= :minYears" \
   --expression-attribute-values '{
@@ -369,7 +369,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --no-scan-index-forward \
@@ -390,7 +390,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level AND YearsOfExperience BETWEEN :minYears AND :maxYears" \
   --expression-attribute-values '{
@@ -412,7 +412,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-    --table-name glad-entities --profile passbrains-ilisa-amplify \
+    --table-name glad-entities --profile AWS_PROFILE \
     --key-condition-expression "EntityType = :entityType AND entity_id = :entityId" \
     --expression-attribute-values '{
       ":entityType": {"S": "UserSkill"},
@@ -433,7 +433,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --filter-expression "Endorsements >= :minEndorsements" \
@@ -457,7 +457,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --filter-expression "LastUsedDate >= :recentDate" \
@@ -479,7 +479,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level AND YearsOfExperience >= :minYears" \
   --filter-expression "Endorsements >= :minEndorsements AND LastUsedDate >= :minDate" \
@@ -510,7 +510,7 @@ aws dynamodb query \
 ```bash
 # This query will return an ERROR - kept for reference
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category" \
   --filter-expression "ProficiencyLevel = :level" \
@@ -523,7 +523,7 @@ aws dynamodb query \
 **Alternative - Fetch all and filter in code:**
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category" \
   --expression-attribute-values '{
@@ -540,7 +540,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND begins_with(SkillName, :skillPrefix)" \
   --expression-attribute-values '{
@@ -561,7 +561,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --select COUNT \
@@ -576,7 +576,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --select COUNT \
@@ -591,7 +591,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --select COUNT \
@@ -606,7 +606,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --select COUNT \
@@ -627,7 +627,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --limit 10 \
@@ -650,7 +650,7 @@ aws dynamodb query \
 
 ```bash
   aws dynamodb query \
-    --table-name glad-entities --profile passbrains-ilisa-amplify \
+    --table-name glad-entities --profile AWS_PROFILE \
     --index-name BySkill \
     --key-condition-expression "Category = :category AND SkillName = :skillName" \
     --expression-attribute-values '{
@@ -665,7 +665,7 @@ aws dynamodb query \
 ```bash
 # Query 1: Advanced
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --expression-attribute-values '{
@@ -676,7 +676,7 @@ aws dynamodb query \
 
 # Query 2: Expert
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level" \
   --expression-attribute-values '{
@@ -699,7 +699,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category" \
   --limit 20 \
@@ -712,7 +712,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category" \
   --limit 20 \
@@ -730,7 +730,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key-condition-expression "EntityType = :entityType" \
   --select COUNT \
   --expression-attribute-values '{
@@ -744,7 +744,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb query \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --index-name BySkill \
   --key-condition-expression "Category = :category AND SkillName = :skillName" \
   --select COUNT \
@@ -760,7 +760,7 @@ aws dynamodb query \
 
 ```bash
 aws dynamodb get-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --key '{
     "EntityType": {"S": "User"},
     "entity_id": {"S": "USER#john_doe"}
@@ -775,7 +775,7 @@ aws dynamodb get-item \
 
 ```bash
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "User"},
     "entity_id": {"S": "USER#john_doe"},
@@ -787,7 +787,7 @@ aws dynamodb put-item \
   }'
 
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "User"},
     "entity_id": {"S": "USER#jane_doe"},
@@ -799,7 +799,7 @@ aws dynamodb put-item \
   }'
 
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "User"},
     "entity_id": {"S": "USER#alice_smith"},
@@ -817,7 +817,7 @@ aws dynamodb put-item \
 
 ```bash
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "Skill"},
     "entity_id": {"S": "SKILL#python"},
@@ -830,7 +830,7 @@ aws dynamodb put-item \
   }'
 
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "Skill"},
     "entity_id": {"S": "SKILL#go"},
@@ -843,7 +843,7 @@ aws dynamodb put-item \
   }'
 
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "Skill"},
     "entity_id": {"S": "SKILL#react"},
@@ -863,7 +863,7 @@ aws dynamodb put-item \
 ```bash
 # John - Python Expert (10 years, 150 endorsements)
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "UserSkill"},
     "entity_id": {"S": "USERSKILL#john_doe#python"},
@@ -882,7 +882,7 @@ aws dynamodb put-item \
 
 # Jane - Python Advanced (5 years, 42 endorsements)
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "UserSkill"},
     "entity_id": {"S": "USERSKILL#jane_doe#python"},
@@ -901,7 +901,7 @@ aws dynamodb put-item \
 
 # Alice - Go Expert (7 years, 80 endorsements)
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "UserSkill"},
     "entity_id": {"S": "USERSKILL#alice_smith#go"},
@@ -920,7 +920,7 @@ aws dynamodb put-item \
 
 # John - React Intermediate (3 years, 25 endorsements)
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "UserSkill"},
     "entity_id": {"S": "USERSKILL#john_doe#react"},
@@ -939,7 +939,7 @@ aws dynamodb put-item \
 
 # Jane - Python Beginner (1 year, 5 endorsements)
 aws dynamodb put-item \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --item '{
     "EntityType": {"S": "UserSkill"},
     "entity_id": {"S": "USERSKILL#jane_doe#go"},
@@ -965,7 +965,7 @@ aws dynamodb put-item \
 
 ```bash
 aws dynamodb describe-table \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --query "Table.GlobalSecondaryIndexes[?IndexName=='BySkill']"
 ```
 
@@ -975,7 +975,7 @@ aws dynamodb describe-table \
 
 ```bash
 aws dynamodb describe-table \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --query "Table.GlobalSecondaryIndexes[?IndexName=='BySkill'].IndexStatus"
 ```
 
@@ -985,7 +985,7 @@ aws dynamodb describe-table \
 
 ```bash
 aws dynamodb describe-table \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --query "Table.AttributeDefinitions"
 ```
 
@@ -995,7 +995,7 @@ aws dynamodb describe-table \
 
 ```bash
 aws dynamodb scan \
-  --table-name glad-entities --profile passbrains-ilisa-amplify \
+  --table-name glad-entities --profile AWS_PROFILE \
   --limit 10
 ```
 

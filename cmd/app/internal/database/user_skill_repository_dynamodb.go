@@ -35,7 +35,6 @@ func (r *DynamoDBRepository) CreateSkill(skill *models.UserSkill) error {
 	}
 
 	_, err = r.client.PutItem(input)
-	_, err = r.client.PutItem(input)
 	if err != nil {
 		log.Error("Failed to create skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
 		return err
@@ -182,8 +181,9 @@ func (r *DynamoDBRepository) ListSkillsForUser(username string) ([]*models.UserS
 }
 
 // ListUsersBySkill retrieves all users who have a specific skill using GSI BySkill
-func (r *DynamoDBRepository) ListUsersBySkill(skillName string) ([]*models.UserSkill, error) {
-	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "skill", skillName)
+// GSI BySkill structure: PK=Category, SK=SkillName+ProficiencyLevel+YearsOfExperience+Username
+func (r *DynamoDBRepository) ListUsersBySkill(category, skillName string) ([]*models.UserSkill, error) {
+	log := logger.WithComponent("database").With("operation", "ListUsersBySkill", "category", category, "skill", skillName)
 	start := time.Now()
 
 	log.Debug("Starting users list retrieval by skill")
@@ -191,8 +191,9 @@ func (r *DynamoDBRepository) ListUsersBySkill(skillName string) ([]*models.UserS
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
 		IndexName:              aws.String(GSIBySkill),
-		KeyConditionExpression: aws.String("SkillName = :skillName"),
+		KeyConditionExpression: aws.String("Category = :category AND SkillName = :skillName"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":category":  {S: aws.String(category)},
 			":skillName": {S: aws.String(skillName)},
 		},
 	}
@@ -213,13 +214,15 @@ func (r *DynamoDBRepository) ListUsersBySkill(skillName string) ([]*models.UserS
 		skills = append(skills, &skill)
 	}
 
-	log.Info("Users with skill retrieved successfully", "skill", skillName, "count", len(skills), "duration", time.Since(start))
+	log.Info("Users with skill retrieved successfully", "category", category, "skill", skillName, "count", len(skills), "duration", time.Since(start))
 	return skills, nil
 }
 
 // ListUsersBySkillAndLevel retrieves users with a specific skill at a specific proficiency level
-func (r *DynamoDBRepository) ListUsersBySkillAndLevel(skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
-	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "skill", skillName, "level", proficiencyLevel)
+// GSI BySkill structure: PK=Category, SK=SkillName+ProficiencyLevel+YearsOfExperience+Username
+// Uses composite sort key matching: Category + SkillName + ProficiencyLevel (left-to-right)
+func (r *DynamoDBRepository) ListUsersBySkillAndLevel(category, skillName string, proficiencyLevel models.ProficiencyLevel) ([]*models.UserSkill, error) {
+	log := logger.WithComponent("database").With("operation", "ListUsersBySkillAndLevel", "category", category, "skill", skillName, "level", proficiencyLevel)
 	start := time.Now()
 
 	log.Debug("Starting users list retrieval by skill and level")
@@ -227,8 +230,9 @@ func (r *DynamoDBRepository) ListUsersBySkillAndLevel(skillName string, proficie
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
 		IndexName:              aws.String(GSIBySkill),
-		KeyConditionExpression: aws.String("SkillName = :skillName AND ProficiencyLevel = :level"),
+		KeyConditionExpression: aws.String("Category = :category AND SkillName = :skillName AND ProficiencyLevel = :level"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":category":  {S: aws.String(category)},
 			":skillName": {S: aws.String(skillName)},
 			":level":     {S: aws.String(string(proficiencyLevel))},
 		},
@@ -250,6 +254,6 @@ func (r *DynamoDBRepository) ListUsersBySkillAndLevel(skillName string, proficie
 		skills = append(skills, &skill)
 	}
 
-	log.Info("Users with skill and level retrieved successfully", "skill", skillName, "level", proficiencyLevel, "count", len(skills), "duration", time.Since(start))
+	log.Info("Users with skill and level retrieved successfully", "category", category, "skill", skillName, "level", proficiencyLevel, "count", len(skills), "duration", time.Since(start))
 	return skills, nil
 }

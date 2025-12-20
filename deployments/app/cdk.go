@@ -31,17 +31,32 @@ func createEntitiesTable(stack awscdk.Stack, id *string, environment string) aws
 		},
 
 		GlobalSecondaryIndexes: &[]*awsdynamodb.GlobalSecondaryIndexPropsV2{
-			// GSI for skill-only queries
+			// GSI for flexible category/skill/proficiency queries
+			// Single PK: Category (allows broad queries)
+			// Composite SK: SkillName + ProficiencyLevel + YearsOfExperience + Username
+			// This design provides maximum query flexibility:
+			//   - Query by Category alone
+			//   - Query by Category + SkillName
+			//   - Query by Category + SkillName + ProficiencyLevel
+			//   - Query by Category + SkillName + ProficiencyLevel + YearsOfExperience (with range)
 			{
 				IndexName: jsii.String("BySkill"),
 				PartitionKey: &awsdynamodb.Attribute{
-					Name: jsii.String("SkillName"),
+					Name: jsii.String("Category"),
 					Type: awsdynamodb.AttributeType_STRING,
 				},
 				SortKeys: &[]*awsdynamodb.Attribute{
 					{
+						Name: jsii.String("SkillName"),
+						Type: awsdynamodb.AttributeType_STRING,
+					},
+					{
 						Name: jsii.String("ProficiencyLevel"),
 						Type: awsdynamodb.AttributeType_STRING,
+					},
+					{
+						Name: jsii.String("YearsOfExperience"),
+						Type: awsdynamodb.AttributeType_NUMBER,
 					},
 					{
 						Name: jsii.String("Username"),

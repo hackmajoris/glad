@@ -66,7 +66,7 @@ Content-Type: application/json
 
 {
   "username": "jane_doe",
-  "password": "secure123"
+  "password": "newPassword123"
 }
 
 ### 1.7 Login - Alice
@@ -331,7 +331,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "skill_name": "JavaScripdt",
+  "skill_name": "JavaScript",
   "proficiency_level": "Advanced",
   "years_of_experience": 5,
   "notes": "Frontend development with React"
@@ -421,50 +421,51 @@ Authorization: Bearer {{token}}
 
 ###############################################################################
 ### 5. CROSS-USER SKILL QUERIES (Protected Routes)
+### NOTE: category parameter is REQUIRED for multi-key GSI queries
 ###############################################################################
 
-### 5.1 Find All Users with Python
-GET {{API_URL}}/skills/Python/users
+### 5.1 Find All Users with Python (Programming category)
+GET {{API_URL}}/skills/Python/users?category=Programming
 Authorization: Bearer {{token}}
 
-### 5.2 Find All Users with JavaScript
-GET {{API_URL}}/skills/JavaScript/users
+### 5.2 Find All Users with JavaScript (Programming category)
+GET {{API_URL}}/skills/JavaScript/users?category=Programming
 Authorization: Bearer {{token}}
 
-### 5.3 Find All Users with Go
-GET {{API_URL}}/skills/Go/users
+### 5.3 Find All Users with Go (Programming category)
+GET {{API_URL}}/skills/Go/users?category=Programming
 Authorization: Bearer {{token}}
 
 ### 5.4 Find Expert Python Developers
-GET {{API_URL}}/skills/Python/users?level=Expert
+GET {{API_URL}}/skills/Python/users?category=Programming&level=Expert
 Authorization: Bearer {{token}}
 
 ### 5.5 Find Intermediate Python Developers
-GET {{API_URL}}/skills/Python/users?level=Intermediate
+GET {{API_URL}}/skills/Python/users?category=Programming&level=Intermediate
 Authorization: Bearer {{token}}
 
 ### 5.6 Find Advanced Python Developers
-GET {{API_URL}}/skills/Python/users?level=Advanced
+GET {{API_URL}}/skills/Python/users?category=Programming&level=Advanced
 Authorization: Bearer {{token}}
 
 ### 5.7 Find Beginner Python Developers
-GET {{API_URL}}/skills/Python/users?level=Beginner
+GET {{API_URL}}/skills/Python/users?category=Programming&level=Beginner
 Authorization: Bearer {{token}}
 
 ### 5.8 Find Expert JavaScript Developers
-GET {{API_URL}}/skills/JavaScript/users?level=Expert
+GET {{API_URL}}/skills/JavaScript/users?category=Programming&level=Expert
 Authorization: Bearer {{token}}
 
 ### 5.9 Find Advanced JavaScript Developers
-GET {{API_URL}}/skills/JavaScript/users?level=Advanced
+GET {{API_URL}}/skills/JavaScript/users?category=Programming&level=Advanced
 Authorization: Bearer {{token}}
 
 ### 5.10 Find Expert Go Developers
-GET {{API_URL}}/skills/Go/users?level=Expert
+GET {{API_URL}}/skills/Go/users?category=Programming&level=Expert
 Authorization: Bearer {{token}}
 
 ### 5.11 Find Intermediate Go Developers
-GET {{API_URL}}/skills/Go/users?level=Intermediate
+GET {{API_URL}}/skills/Go/users?category=Programming&level=Intermediate
 Authorization: Bearer {{token}}
 
 ###############################################################################
@@ -703,8 +704,8 @@ Content-Type: application/json
   "notes": "Making good progress with Rust"
 }
 
-### 8.8 WORKFLOW Step 8 - Find All Rust Developers
-GET {{API_URL}}/skills/Rust/users
+### 8.8 WORKFLOW Step 8 - Find All Rust Developers (Programming category)
+GET {{API_URL}}/skills/Rust/users?category=Programming
 Authorization: Bearer {{token}}
 
 ### 8.9 WORKFLOW Step 9 - Update User Profile

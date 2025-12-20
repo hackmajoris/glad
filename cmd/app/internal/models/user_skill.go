@@ -100,8 +100,6 @@ func (s *UserSkill) SetKeys() {
 	// Base table key: Unique identifier
 	s.EntityID = BuildUserSkillEntityID(s.Username, s.SkillID)
 	s.EntityType = "UserSkill"
-	// Composite sort key: ProficiencyLevel#Username
-	s.SkillCompositeSort = string(s.ProficiencyLevel) + "#" + s.Username
 }
 
 // UpdateProficiency updates the skill proficiency level

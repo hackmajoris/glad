@@ -313,7 +313,7 @@ func (h *Handler) DeleteSkill(request events.APIGatewayProxyRequest) (events.API
 }
 
 // ListUsersBySkill handles finding all users with a specific skill
-// GET /skills/{skillName}/users
+// GET /skills/{skillName}/users?category=<category>&level=<level>
 func (h *Handler) ListUsersBySkill(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// Get skill name from path parameter
 	skillName, ok := request.PathParameters["skillName"]
@@ -321,12 +321,18 @@ func (h *Handler) ListUsersBySkill(request events.APIGatewayProxyRequest) (event
 		return errorResponse(http.StatusBadRequest, "Skill name is required"), nil
 	}
 
+	// Get category from query parameters (required for multi-key GSI)
+	category, ok := request.QueryStringParameters["category"]
+	if !ok || category == "" {
+		return errorResponse(http.StatusBadRequest, "Category is required"), nil
+	}
+
 	// Check for proficiency level filter in query parameters
 	proficiencyLevel, ok := request.QueryStringParameters["level"]
 	if ok && proficiencyLevel != "" {
 		// Query with level filter
 		level := models.ProficiencyLevel(proficiencyLevel)
-		users, err := h.skillService.ListUsersBySkillAndLevel(skillName, level)
+		users, err := h.skillService.ListUsersBySkillAndLevel(category, skillName, level)
 		if err != nil {
 			return h.handleServiceError(err), nil
 		}
@@ -334,7 +340,7 @@ func (h *Handler) ListUsersBySkill(request events.APIGatewayProxyRequest) (event
 	}
 
 	// Query all users with skill
-	users, err := h.skillService.ListUsersBySkill(skillName)
+	users, err := h.skillService.ListUsersBySkill(category, skillName)
 	if err != nil {
 		return h.handleServiceError(err), nil
 	}

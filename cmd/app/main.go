@@ -25,7 +25,7 @@ func main() {
 
 	// Initialize services
 	userService := service.NewUserService(repo, tokenService)
-	skillService := service.NewSkillService(repo, repo) // repo implements both SkillRepository and MasterSkillRepository
+	skillService := service.NewSkillService(repo, repo, repo) // repo implements SkillRepository, MasterSkillRepository, and UserRepository
 	masterSkillService := service.NewMasterSkillService(repo)
 
 	// Initialize handlers

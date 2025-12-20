@@ -28,6 +28,18 @@ func (em *ErrorMapper) MapToHTTP(err error) (int, string) {
 	case pkgerrors.Is(err, apperrors.ErrInvalidCredentials):
 		return http.StatusUnauthorized, "Invalid credentials"
 
+	// Skill errors
+	case pkgerrors.Is(err, apperrors.ErrSkillNotFound):
+		return http.StatusNotFound, "Skill not found"
+	case pkgerrors.Is(err, apperrors.ErrSkillAlreadyExists):
+		return http.StatusConflict, "Skill already exists for this user"
+
+	// Master skill errors
+	case pkgerrors.Is(err, apperrors.ErrMasterSkillNotFound):
+		return http.StatusNotFound, "Master skill not found"
+	case pkgerrors.Is(err, apperrors.ErrMasterSkillExists):
+		return http.StatusConflict, "Master skill already exists"
+
 	// Validation errors
 	case pkgerrors.Is(err, pkgerrors.ErrRequiredField):
 		return http.StatusBadRequest, "Required field missing"
@@ -36,6 +48,12 @@ func (em *ErrorMapper) MapToHTTP(err error) (int, string) {
 	case pkgerrors.Is(err, apperrors.ErrInvalidName):
 		return http.StatusBadRequest, err.Error()
 	case pkgerrors.Is(err, apperrors.ErrInvalidPassword):
+		return http.StatusBadRequest, err.Error()
+	case pkgerrors.Is(err, apperrors.ErrInvalidProficiencyLevel):
+		return http.StatusBadRequest, err.Error()
+	case pkgerrors.Is(err, apperrors.ErrInvalidYearsOfExperience):
+		return http.StatusBadRequest, err.Error()
+	case pkgerrors.Is(err, apperrors.ErrInvalidSkillName):
 		return http.StatusBadRequest, err.Error()
 
 	// Default: Internal server error

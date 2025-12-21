@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
@@ -62,9 +61,9 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	}))
 
 	api := awsapigateway.NewRestApi(stack, jsii.String(id+"-api-gateway"), &awsapigateway.RestApiProps{
-		RestApiName: jsii.String("glad-api gateway"),
-		Description: jsii.String("GLAD Stack API"),
-		Deploy:      jsii.Bool(false),
+		RestApiName:    jsii.String("glad-api gateway"),
+		Description:    jsii.String("GLAD Stack API"),
+		Deploy:         jsii.Bool(false),
 		CloudWatchRole: jsii.Bool(true),
 		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
 			AllowOrigins:     jsii.Strings("*"),
@@ -175,9 +174,8 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	})
 	deployment.Node().AddDependency(myFunc)
 
-	// Create stage
-	timestamp := time.Now().Unix()
-	stage := awsapigateway.NewStage(stack, jsii.String(fmt.Sprintf("%s-api-stage-%d", id, timestamp)), &awsapigateway.StageProps{
+	// Create stage with fixed logical ID
+	stage := awsapigateway.NewStage(stack, jsii.String(id+"-api-stage"), &awsapigateway.StageProps{
 		Deployment:           deployment,
 		StageName:            jsii.String("prod"),
 		ThrottlingBurstLimit: jsii.Number(200),

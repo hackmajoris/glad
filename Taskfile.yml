@@ -203,15 +203,40 @@ tasks:
     cmds:
       - echo 'Deploying to AWS with profile {{.profile | default "default"}}'
       - echo 'CDK will automatically build the Docker image during deployment...'
-      - cdk deploy --require-approval never --profile {{.profile | default "default"}}
+      - cdk deploy --all --require-approval never --profile {{.profile | default "default"}}
       - echo 'Deployment completed!'
+
+  cdk:deploy:database:
+    desc: 'Deploy only database stack'
+    dir: 'deployments/app'
+    cmds:
+      - cdk deploy glad-database-stack --require-approval never --profile {{.profile | default "default"}}
+
+  cdk:deploy:app:
+    desc: 'Deploy only application stack'
+    dir: 'deployments/app'
+    cmds:
+      - cdk deploy glad-app-stack --require-approval never --profile {{.profile | default "default"}}
 
   cdk:destroy:
     desc: 'Destroy AWS infrastructure (use with caution!)'
     dir: 'deployments/app'
     cmds:
       - echo 'WARNING This will destroy all AWS resources!'
-      - cdk destroy --force
+      - cdk destroy --all --force
+
+  cdk:destroy:app:
+    desc: 'Destroy only application stack (keeps database)'
+    dir: 'deployments/app'
+    cmds:
+      - cdk destroy glad-app-stack --force
+
+  cdk:destroy:database:
+    desc: 'Destroy database stack (table will be retained)'
+    dir: 'deployments/app'
+    cmds:
+      - echo 'WARNING Database table will be retained but stack will be removed'
+      - cdk destroy glad-database-stack --force
 
   cdk:bootstrap:
     desc: 'Bootstrap CDK in your AWS account (run once)'

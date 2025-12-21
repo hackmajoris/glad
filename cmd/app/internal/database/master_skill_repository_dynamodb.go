@@ -36,7 +36,7 @@ func (r *DynamoDBRepository) CreateMasterSkill(skill *models.Skill) error {
 	_, err = r.client.PutItem(input)
 	if err != nil {
 		log.Error("Failed to create master skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return err
+		return apperrors.ErrSkillAlreadyExists
 	}
 
 	log.Info("Master skill created successfully", "duration", time.Since(start))
@@ -107,7 +107,7 @@ func (r *DynamoDBRepository) UpdateMasterSkill(skill *models.Skill) error {
 	_, err = r.client.PutItem(input)
 	if err != nil {
 		log.Error("Failed to update master skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return err
+		return apperrors.ErrSkillNotFound
 	}
 
 	log.Info("Master skill updated successfully", "duration", time.Since(start))
@@ -135,7 +135,7 @@ func (r *DynamoDBRepository) DeleteMasterSkill(skillID string) error {
 	_, err := r.client.DeleteItem(input)
 	if err != nil {
 		log.Error("Failed to delete master skill from DynamoDB", "error", err.Error(), "duration", time.Since(start))
-		return err
+		return apperrors.ErrSkillNotFound
 	}
 
 	log.Info("Master skill deleted successfully", "duration", time.Since(start))

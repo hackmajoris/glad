@@ -33,14 +33,15 @@ func (r *DynamoDBRepository) CreateSkill(skill *models.UserSkill) error {
 		Item:                item,
 		ConditionExpression: aws.String("attribute_not_exists(entity_id)"),
 	}
-
 	_, err = r.client.PutItem(input)
+
 	if err != nil {
 		log.Error("Failed to create skill in DynamoDB", "error", err.Error(), "duration", time.Since(start))
 		return err
 	}
 
 	log.Info("Skill created successfully", "duration", time.Since(start))
+
 	return nil
 }
 

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  http-client:
+    image: jetbrains/intellij-http-client
+    volumes:
+      - ./cmd/app/testdata/api-testing:/workdir
+    working_dir: /workdir
+    command: >
+      --env=dev
+      --env-file=http-client.env.json
+      api-test.http

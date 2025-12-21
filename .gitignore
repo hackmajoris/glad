@@ -12,6 +12,7 @@ main
 .claude
 .amazonq
 .mcp.json
+changes.md
 
 scripts/continue-refresh-token.sh
 
@@ -45,7 +46,10 @@ Thumbs.db
 # Environment and secrets
 .env
 .env.local
+http-client.env.json
+cmd/app/testdata/api-testing/http-client.env.json
 .env.*.local
+*.env.*
 *.pem
 *.key
 secrets.*
@@ -83,4 +87,4 @@ yarn-error.log*
 .terraform.lock.hcl
 
 # Go module downloads (keep go.sum)
-vendor/
+vendor/cmd/app/testdata/api-testing/http-client.env.json

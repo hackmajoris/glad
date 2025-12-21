@@ -22,4 +22,10 @@ var (
 	ErrInvalidProficiencyLevel  = errors.New("proficiency level must be Beginner, Intermediate, Advanced, or Expert")
 	ErrInvalidYearsOfExperience = errors.New("years of experience must be non-negative")
 	ErrInvalidSkillName         = errors.New("skill name must be between 1 and 100 characters")
+
+	// ErrMasterSkillNotFound Master skill errors
+	ErrMasterSkillNotFound = errors.New("master skill not found")
+	ErrMasterSkillExists   = errors.New("master skill already exists")
+	ErrInvalidSkillID      = errors.New("skill ID must be between 1 and 50 characters")
+	ErrInvalidCategory     = errors.New("category must be between 1 and 50 characters")
 )

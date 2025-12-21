@@ -23,13 +23,15 @@ var (
 type SkillService struct {
 	repo            database.SkillRepository
 	masterSkillRepo database.MasterSkillRepository
+	userRepo        database.UserRepository
 }
 
 // NewSkillService creates a new SkillService
-func NewSkillService(repo database.SkillRepository, masterSkillRepo database.MasterSkillRepository) *SkillService {
+func NewSkillService(repo database.SkillRepository, masterSkillRepo database.MasterSkillRepository, userRepo database.UserRepository) *SkillService {
 	return &SkillService{
 		repo:            repo,
 		masterSkillRepo: masterSkillRepo,
+		userRepo:        userRepo,
 	}
 }
 
@@ -153,6 +155,12 @@ func (s *SkillService) ListSkillsForUser(username string) ([]dto.SkillResponse, 
 	start := time.Now()
 
 	log.Info("Retrieving skills for user")
+
+	// Check if user exists
+	if _, err := s.userRepo.GetUser(username); err != nil {
+		log.Error("User not found", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
 
 	skills, err := s.repo.ListSkillsForUser(username)
 	if err != nil {

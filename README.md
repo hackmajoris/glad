@@ -16,38 +16,18 @@ that can handle millions of requests while maintaining low latency and high avai
 
 [![Go Version](https://img.shields.io/badge/go-1.24.0-blue)]()
 
-## Features
-
-### User Management
-- ✅ User registration with validation (username, name, password)
-- ✅ User authentication with JWT tokens
-- ✅ User profile updates (name, password changes)
-- ✅ List all users in the system
-- ✅ Bcrypt password hashing for security
-- ✅ Get current authenticated user info
-
-### Skills Management
-- ✅ **Master Skills Catalog** - Centralized skill definitions
-- ✅ **User Skills** - Assign skills to users with proficiency tracking
-- ✅ **Proficiency Levels** - Beginner, Intermediate, Advanced, Expert
-- ✅ **Years of Experience** - Track experience per skill
-- ✅ **Skill Categories** - Organize skills by category (Programming, DevOps, etc.)
-- ✅ **Endorsements** - Track skill endorsement counts
-- ✅ **Last Used Date** - Track when skill was last used
-- ✅ **Skill Notes** - Add custom notes/comments to user skills
-- ✅ **Cross-User Queries** - Find all users with a specific skill
-- ✅ **Filter by Proficiency** - Query users by skill and proficiency level
-
 ### Architecture & Infrastructure
 - ✅ **Serverless Architecture** using AWS Lambda + API Gateway
 - ✅ **Single Table DynamoDB Design** with Multi-Key GSI pattern
+- ✅ **Dockerized Lambda**: containerized Go app running in Lambda
 - ✅ **Clean Architecture** with layered design (Handler → Service → Repository)
 - ✅ **Repository Pattern** with DynamoDB and Mock implementations
 - ✅ **Comprehensive Testing** - unit, integration, and API tests
 - ✅ **Structured Logging** using Go's slog package with component tracking
 - ✅ **Infrastructure as Code** with AWS CDK (Go)
-- ✅ **JWT Authentication** with configurable token expiry
+- ✅ **JWT Authentication example** with configurable token expiry
 - ✅ **Automatic Mock/Production** repository switching
+- ✅ **Go Task** task automatization orchestrator
 
 ## Project Structure
 
@@ -155,70 +135,7 @@ The unified `Repository` interface composes all entity repositories, allowing bo
 
 ## Data Model - Optimized Single Table Design
 
-Optimized single-table design using `EntityType` as partition key to minimize GSI usage and reduce costs while maintaining optimal query performance.
-
-### Table: `glad-entities`
-- **Partition Key**: `EntityType` (STRING) - "User", "Skill", "UserSkill"
-- **Sort Key**: `entity_id` (STRING) - Unique entity identifier
-
-### Entity ID Format (using `#` delimiter):
-- **Users**: `USER#<username>` (e.g., `USER#john`)
-- **User Skills**: `USERSKILL#<username>#<skill_id>` (e.g., `USERSKILL#john#python`)
-- **Master Skills**: `SKILL#<skill_id>` (e.g., `SKILL#python`)
-
-### Global Secondary Index (1 GSI):
-
-1. **BySkill** - Consolidated skill queries with composite sort keys
-   - PK: `SkillName`
-   - SK: `ProficiencyLevel` + `Username` (multi-key sort)
-   - Supports both skill-only and skill+level queries
-
-### Query Patterns:
-- **List all users**: `EntityType = "User"` (main table)
-- **List all skills**: `EntityType = "Skill"` (main table)
-- **User's skills**: `EntityType = "UserSkill" AND begins_with(entity_id, "USERSKILL#john#")` (main table)
-- **Users with skill**: `SkillName = "Python"` (BySkill GSI)
-- **Users with skill at level**: `SkillName = "Python" AND ProficiencyLevel = "Expert"` (BySkill GSI)
-
-## API Endpoints
-
-### Authentication (Public)
-| Method | Path       | Auth | Description                  |
-|--------|------------|------|------------------------------|
-| POST   | /register  | No   | User registration            |
-| POST   | /login     | No   | Authentication (returns JWT) |
-
-### User Management (Protected - JWT Required)
-| Method | Path       | Auth | Description                  |
-|--------|------------|------|------------------------------|
-| GET    | /me        | JWT  | Get current user info        |
-| GET    | /users     | JWT  | List all users               |
-| PUT    | /user      | JWT  | Update user profile          |
-| GET    | /protected | JWT  | Protected resource demo      |
-
-### User Skills (Protected - JWT Required)
-| Method | Path                               | Auth | Description              |
-|--------|------------------------------------|------|--------------------------|
-| POST   | /users/{username}/skills           | JWT  | Add skill to user        |
-| GET    | /users/{username}/skills           | JWT  | List all skills for user |
-| GET    | /users/{username}/skills/{skillID} | JWT  | Get specific user skill  |
-| PUT    | /users/{username}/skills/{skillID} | JWT  | Update user skill        |
-| DELETE | /users/{username}/skills/{skillID} | JWT  | Delete user skill        |
-
-### Master Skills (Protected - JWT Required)
-| Method | Path                     | Auth | Description               |
-|--------|--------------------------|------|---------------------------|
-| POST   | /master-skills           | JWT  | Create master skill       |
-| GET    | /master-skills           | JWT  | List all master skills    |
-| GET    | /master-skills/{skillID} | JWT  | Get specific master skill |
-| PUT    | /master-skills/{skillID} | JWT  | Update master skill       |
-| DELETE | /master-skills/{skillID} | JWT  | Delete master skill       |
-
-### Cross-User Skill Queries (Protected - JWT Required)
-| Method | Path                                   | Auth | Description                    |
-|--------|----------------------------------------|------|--------------------------------|
-| GET    | /skills/{skillName}/users              | JWT  | Find all users with skill      |
-| GET    | /skills/{skillName}/users?level=Expert | JWT  | Find users with skill at level |
+[Check Data Model and Single Table Design Specs ](cmd/app/docs/dynamodb_table_design.md)
 
 ## Getting Started
 
@@ -257,78 +174,6 @@ task dev:quick-test
 task dev:full-test
 ```
 
-### Testing the API
-
-#### User Registration & Authentication
-```bash
-# Register a user
-curl -X POST http://localhost:8080/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","name":"Test User","password":"password123"}'
-
-# Login (returns JWT token)
-curl -X POST http://localhost:8080/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"password123"}'
-
-# Get current user info
-curl -X GET http://localhost:8080/me \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-
-# Update user profile
-curl -X PUT http://localhost:8080/user \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Updated Name"}'
-
-# List all users
-curl -X GET http://localhost:8080/users \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-#### Master Skills Management
-```bash
-# Create a master skill
-curl -X POST http://localhost:8080/master-skills \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "skill_id":"python",
-    "skill_name":"Python",
-    "category":"Programming"
-  }'
-
-# List all master skills
-curl -X GET http://localhost:8080/master-skills \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-#### User Skills Management
-```bash
-# Add skill to user
-curl -X POST http://localhost:8080/users/testuser/skills \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "skill_id":"python",
-    "skill_name":"Python",
-    "category":"Programming",
-    "proficiency_level":"Intermediate",
-    "years_of_experience":3
-  }'
-
-# Get user's skills
-curl -X GET http://localhost:8080/users/testuser/skills \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-
-# Find all users with Python skill
-curl -X GET http://localhost:8080/skills/Python/users \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-
-# Find Expert Python developers
-curl -X GET "http://localhost:8080/skills/Python/users?level=Expert" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
 
 ### Building for Lambda
 

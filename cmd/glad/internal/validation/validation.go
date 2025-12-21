@@ -1,8 +1,8 @@
 package validation
 
 import (
-	apperrors "github.com/hackmajoris/glad/cmd/glad/internal/errors"
-	pkgerrors "github.com/hackmajoris/glad/pkg/errors"
+	apperrors "github.com/hackmajoris/glad-stack/cmd/glad/internal/errors"
+	pkgerrors "github.com/hackmajoris/glad-stack/pkg/errors"
 )
 
 // Validator provides validation functionality

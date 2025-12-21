@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	apperrors "github.com/hackmajoris/glad/cmd/glad/internal/errors"
-	pkgerrors "github.com/hackmajoris/glad/pkg/errors"
+	apperrors "github.com/hackmajoris/glad-stack/cmd/glad/internal/errors"
+	pkgerrors "github.com/hackmajoris/glad-stack/pkg/errors"
 )
 
 // ErrorMapper maps service errors to HTTP status codes and messages

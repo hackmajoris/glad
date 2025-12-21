@@ -3,9 +3,9 @@ package auth
 import (
 	"time"
 
-	"github.com/hackmajoris/glad/pkg/config"
-	pkgerrors "github.com/hackmajoris/glad/pkg/errors"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/pkg/config"
+	pkgerrors "github.com/hackmajoris/glad-stack/pkg/errors"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 
 	"github.com/golang-jwt/jwt/v5"
 )

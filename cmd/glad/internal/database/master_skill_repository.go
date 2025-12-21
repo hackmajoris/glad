@@ -1,6 +1,6 @@
 package database
 
-import "github.com/hackmajoris/glad/cmd/glad/internal/models"
+import "github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
 
 // MasterSkillRepository defines operations for master skills
 type MasterSkillRepository interface {

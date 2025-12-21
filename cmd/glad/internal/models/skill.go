@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	apperrors "github.com/hackmajoris/glad/pkg/errors"
+	apperrors "github.com/hackmajoris/glad-stack/pkg/errors"
 )
 
 // Skill represents a master skill entity in the system

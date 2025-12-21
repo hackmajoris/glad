@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hackmajoris/glad/pkg/config"
+	"github.com/hackmajoris/glad-stack/pkg/config"
 )
 
 func TestNewRepository_EnvironmentDetection(t *testing.T) {

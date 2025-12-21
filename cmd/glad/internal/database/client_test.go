@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	apperrors "github.com/hackmajoris/glad/cmd/glad/internal/errors"
-	"github.com/hackmajoris/glad/cmd/glad/internal/models"
+	apperrors "github.com/hackmajoris/glad-stack/cmd/glad/internal/errors"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
 )
 
 func TestNewMockRepository(t *testing.T) {

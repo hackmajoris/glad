@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hackmajoris/glad/pkg/auth"
-	pkgerrors "github.com/hackmajoris/glad/pkg/errors"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/pkg/auth"
+	pkgerrors "github.com/hackmajoris/glad-stack/pkg/errors"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 
 	"github.com/aws/aws-lambda-go/events"
 )

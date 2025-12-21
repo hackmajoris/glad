@@ -3,9 +3,9 @@ package database
 import (
 	"time"
 
-	apperrors "github.com/hackmajoris/glad/cmd/glad/internal/errors"
-	"github.com/hackmajoris/glad/cmd/glad/internal/models"
-	"github.com/hackmajoris/glad/pkg/logger"
+	apperrors "github.com/hackmajoris/glad-stack/cmd/glad/internal/errors"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"

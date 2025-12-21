@@ -3,8 +3,8 @@ package database
 import (
 	"sync"
 
-	"github.com/hackmajoris/glad/cmd/glad/internal/models"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"

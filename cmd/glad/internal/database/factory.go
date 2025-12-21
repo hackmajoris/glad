@@ -3,8 +3,8 @@ package database
 import (
 	"os"
 
-	"github.com/hackmajoris/glad/pkg/config"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/pkg/config"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 )
 
 // Repository combines all repository interfaces for unified access.

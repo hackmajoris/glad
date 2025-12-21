@@ -3,13 +3,13 @@ package service
 import (
 	"time"
 
-	"github.com/hackmajoris/glad/cmd/glad/internal/database"
-	"github.com/hackmajoris/glad/cmd/glad/internal/dto"
-	apperrors "github.com/hackmajoris/glad/cmd/glad/internal/errors"
-	"github.com/hackmajoris/glad/cmd/glad/internal/models"
-	"github.com/hackmajoris/glad/pkg/auth"
-	pkgerrors "github.com/hackmajoris/glad/pkg/errors"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/database"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/dto"
+	apperrors "github.com/hackmajoris/glad-stack/cmd/glad/internal/errors"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
+	"github.com/hackmajoris/glad-stack/pkg/auth"
+	pkgerrors "github.com/hackmajoris/glad-stack/pkg/errors"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 )
 
 // Re-export domain errors for convenience in handler layer

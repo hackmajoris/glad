@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/hackmajoris/glad/cmd/glad/internal/dto"
-	"github.com/hackmajoris/glad/cmd/glad/internal/service"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/dto"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/service"
 
 	"github.com/aws/aws-lambda-go/events"
 )

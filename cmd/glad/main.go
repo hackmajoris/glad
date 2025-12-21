@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 
-	"github.com/hackmajoris/glad/cmd/glad/internal/database"
-	"github.com/hackmajoris/glad/cmd/glad/internal/handler"
-	"github.com/hackmajoris/glad/cmd/glad/internal/router"
-	"github.com/hackmajoris/glad/cmd/glad/internal/service"
-	"github.com/hackmajoris/glad/pkg/auth"
-	"github.com/hackmajoris/glad/pkg/config"
-	"github.com/hackmajoris/glad/pkg/middleware"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/database"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/handler"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/router"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/service"
+	"github.com/hackmajoris/glad-stack/pkg/auth"
+	"github.com/hackmajoris/glad-stack/pkg/config"
+	"github.com/hackmajoris/glad-stack/pkg/middleware"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"

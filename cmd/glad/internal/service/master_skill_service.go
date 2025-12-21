@@ -3,10 +3,10 @@ package service
 import (
 	"time"
 
-	"github.com/hackmajoris/glad/cmd/glad/internal/database"
-	"github.com/hackmajoris/glad/cmd/glad/internal/dto"
-	"github.com/hackmajoris/glad/cmd/glad/internal/models"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/database"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/dto"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 )
 
 // MasterSkillService handles master skill business logic

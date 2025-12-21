@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 
-	"github.com/hackmajoris/glad/pkg/middleware"
+	"github.com/hackmajoris/glad-stack/pkg/middleware"
 
 	"github.com/aws/aws-lambda-go/events"
 )

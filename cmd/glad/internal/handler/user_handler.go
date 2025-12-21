@@ -5,13 +5,13 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/hackmajoris/glad/cmd/glad/internal/dto"
-	"github.com/hackmajoris/glad/cmd/glad/internal/models"
-	"github.com/hackmajoris/glad/cmd/glad/internal/service"
-	"github.com/hackmajoris/glad/cmd/glad/internal/validation"
-	"github.com/hackmajoris/glad/pkg/auth"
-	_ "github.com/hackmajoris/glad/pkg/errors"
-	"github.com/hackmajoris/glad/pkg/logger"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/dto"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/models"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/service"
+	"github.com/hackmajoris/glad-stack/cmd/glad/internal/validation"
+	"github.com/hackmajoris/glad-stack/pkg/auth"
+	_ "github.com/hackmajoris/glad-stack/pkg/errors"
+	"github.com/hackmajoris/glad-stack/pkg/logger"
 )
 
 // Handler handles HTTP requests

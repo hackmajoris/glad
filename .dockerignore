@@ -1,5 +1,5 @@
 # CDK output directory - MUST be excluded to prevent recursive bundling
-deployments/app/cdk.out
+deployments/glad/cdk.out
 deployments/**/cdk.out
 **/cdk.out
 

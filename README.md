@@ -34,7 +34,7 @@ that can handle millions of requests while maintaining low latency and high avai
 ```
 glad/
 ├── cmd/
-│   └── app/                        # Lambda application
+│   └── glad/                       # Lambda application
 │       ├── main.go                 # Lambda entry point
 │       ├── integration_test.go     # Integration tests
 │       ├── testdata/               # Test data files
@@ -54,7 +54,7 @@ glad/
 │   ├── logger/                     # Structured logging
 │   └── middleware/                 # HTTP middleware
 ├── deployments/
-│   └── app/                        # AWS CDK infrastructure
+│   └── glad/                        # AWS CDK infrastructure
 │       ├── cdk.go                  # CDK stack definition
 ├── Taskfile.yml                    # Task runner configuration
 ├── .golangci.yml                   # Go linter configuration
@@ -93,7 +93,7 @@ Request → Router → Middleware → Handler → Service → Repository → Dat
 The database package follows a scalable file organization pattern designed for growth to 10+ repositories:
 
 ```
-cmd/app/internal/database/
+cmd/glad/internal/database/
 ├── client.go                              # Repository struct definitions
 ├── constants.go                           # Table names, GSI constants
 ├── entity_keys.go                         # Entity ID builders and parsers
@@ -135,7 +135,7 @@ The unified `Repository` interface composes all entity repositories, allowing bo
 
 ## Data Model - Optimized Single Table Design
 
-[Check Data Model and Single Table Design Specs ](cmd/app/docs/dynamodb_table_design.md)
+[Check Data Model and Single Table Design Specs ](cmd/glad/docs/dynamodb_table_design.md)
 
 ## Getting Started
 
@@ -277,13 +277,13 @@ Test coverage includes:
 ### Config (`pkg/config/`)
 Centralized configuration loading from environment variables with typed structs and defaults.
 
-### Errors (`cmd/app/internal/errors/` & `pkg/errors/`)
+### Errors (`cmd/glad/internal/errors/` & `pkg/errors/`)
 - Domain-specific error definitions
 - Reusable error utilities
 - HTTP status code mapping
 - Proper error wrapping with context
 
-### Validation (`cmd/app/internal/validation/`)
+### Validation (`cmd/glad/internal/validation/`)
 - Username validation (3-50 chars, alphanumeric + underscore)
 - Password validation (min 6 chars)
 - Name validation (non-empty)

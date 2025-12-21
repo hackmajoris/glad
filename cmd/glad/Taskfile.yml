@@ -1,0 +1,91 @@
+version: '3'
+
+vars:
+  APP_NAME: glad
+  LAMBDA_PATH: cmd/glad
+  DEPLOYMENT_PATH: deployments/glad
+  DOCKER_IMAGE: glad-lambda
+
+tasks:
+  build:
+    desc: 'Build app Lambda function (ZIP method)'
+    cmds:
+      - echo 'Building {{.APP_NAME}} Lambda function...'
+      - mkdir -p .bin
+      - env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda -ldflags='-s -w' -o .bin/bootstrap ./{{.LAMBDA_PATH}}
+      - cd .bin && zip lambda-function.zip bootstrap
+      - echo 'Success!'
+
+  build:docker:
+    desc: 'Build app Docker image for Lambda'
+    cmds:
+      - echo 'Building {{.APP_NAME}} Docker image...'
+      - docker build -f Dockerfile.lambda --build-arg LAMBDA_PATH={{.LAMBDA_PATH}} -t {{.DOCKER_IMAGE}}:latest .
+      - echo 'Docker image built successfully!'
+
+  test:
+    desc: 'Run app tests'
+    cmds:
+      - go test -v ./{{.LAMBDA_PATH}}/...
+
+  test:integration:
+    desc: 'Run app integration tests'
+    cmds:
+      - go test -v -tags integration ./{{.LAMBDA_PATH}}
+
+  cdk:synth:
+    desc: 'Synthesize app CDK template'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk synth
+
+  cdk:diff:
+    desc: 'Show app stack differences'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk diff
+
+  cdk:deploy:
+    desc: 'Deploy app infrastructure'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - echo 'Deploying {{.APP_NAME}} with profile {{.profile | default "default"}}'
+      - cdk deploy --all --require-approval never --profile {{.profile | default "default"}}
+
+  cdk:deploy:database:
+    desc: 'Deploy app database stack'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk deploy glad-database-stack --require-approval never --profile {{.profile | default "default"}}
+
+  cdk:deploy:app:
+    desc: 'Deploy app application stack'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk deploy glad-app-stack --require-approval never --profile {{.profile | default "default"}}
+
+  cdk:destroy:
+    desc: 'Destroy app infrastructure'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk destroy --all --force
+
+  cdk:destroy:app:
+    desc: 'Destroy app application stack'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk destroy glad-app-stack --force
+
+  cdk:destroy:database:
+    desc: 'Destroy app database stack'
+    dir: '{{.DEPLOYMENT_PATH}}'
+    cmds:
+      - cdk destroy glad-database-stack --force
+
+  deploy:
+    desc: 'Full app deployment workflow'
+    cmds:
+      - task: test
+      - task: cdk:deploy
+        vars:
+          profile: '{{.profile | default "default"}}'

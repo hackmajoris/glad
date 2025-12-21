@@ -1,108 +1,23 @@
 version: '3'
 
+includes:
+  glad:
+    taskfile: ./cmd/glad/Taskfile.yml
+    dir: .
+
 tasks:
   default:
     desc: 'List all available tasks'
     cmd: task --list-all
 
-  # Continue AI tasks
-  continue:refresh-token:
-    desc: 'Refresh msg ai api-token'
-    dir: '{{.ROOT_DIR}}'
-    cmds:
-      - scripts/continue-refresh-token.sh
-
-  # Build tasks
-  build:lambda:
-    desc: 'Build Lambda function for AWS deployment (legacy ZIP method)'
-    cmds:
-      - echo 'Building Lambda function...'
-      - mkdir -p .bin
-      - env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda -ldflags='-s -w' -o .bin/bootstrap ./cmd/app
-      - cd .bin && zip lambda-function.zip bootstrap
-      - echo 'success!'
-
-  build:docker:
-    desc: 'Build Docker image for Lambda deployment'
-    cmds:
-      - echo 'Building Docker image for Lambda...'
-      - docker build -t glad-lambda:latest .
-      - echo 'Docker image built successfully!'
-
-  build:docker:test:
-    desc: 'Test Docker image locally using Lambda Runtime Interface Emulator'
-    cmds:
-      - echo 'Testing Docker image locally...'
-      - echo 'Starting Lambda container in background on port 9000...'
-      - docker run -d --name glad-lambda-test --rm -p 9000:8080 --env-file .env glad-lambda:latest
-      - echo 'Waiting for container to be ready...'
-      - sleep 3
-      - echo ''
-      - echo '🧪 Testing Lambda with GET /protected request...'
-      - |
-        curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "httpMethod": "GET",
-            "path": "/protected",
-            "headers": {"Content-Type": "application/json"},
-            "body": null
-          }' && echo ""
-      - echo ''
-      - echo '📋 Container logs:'
-      - docker logs glad-lambda-test
-      - echo ''
-      - echo '🛑 Stopping container...'
-      - docker stop glad-lambda-test
-      - echo '✅ Test complete!'
-
-  build:docker:test:interactive:
-    desc: 'Run Docker Lambda container interactively (stays running, stop with Ctrl+C)'
-    cmds:
-      - echo 'Starting Lambda container on port 9000...'
-      - echo 'Send requests to http://localhost:9000/2015-03-31/functions/function/invocations'
-      - echo 'Stop with Ctrl+C'
-      - echo ''
-      - docker run --rm --name glad-lambda-interactive -p 9000:8080 --env-file .env glad-lambda:latest
-
-  debug:lambda:
-    desc: 'Debug Lambda function deployment issues'
-    cmds:
-      - ./debug-lambda.sh
-
-  debug:lambda:local:
-    desc: 'Test Lambda Docker image locally'
-    cmds:
-      - ./test-lambda-local.sh
-
-  debug:apigateway:
-    desc: 'Debug API Gateway integration issues'
-    cmds:
-      - ./debug-apigateway.sh
-
-  debug:force-deploy:
-    desc: 'Force API Gateway stage redeployment (fixes deployment drift)'
-    cmds:
-      - ./force-stage-deploy.sh
-
-  debug:logs:
-    desc: 'Tail Lambda CloudWatch logs in real-time'
-    cmds:
-      - |
-        FUNCTION_NAME=$(aws cloudformation describe-stack-resources --stack-name glad-stack --profile {{.AWS_PROFILE | default "default"}} --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text)
-        echo "Tailing logs for function: $FUNCTION_NAME"
-        aws logs tail "/aws/lambda/$FUNCTION_NAME" --follow --profile {{.AWS_PROFILE | default "default"}}
-
-  # Development tasks
-  
-  # Testing tasks
+  # Global tasks
   test:
-    desc: 'Run all Go tests'
+    desc: 'Run all tests'
     cmds:
       - go test ./...
 
   test:verbose:
-    desc: 'Run all Go tests with verbose output'
+    desc: 'Run all tests with verbose output'
     cmds:
       - go test -v ./...
 
@@ -113,161 +28,35 @@ tasks:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
       - echo 'Coverage report generated - coverage.html'
-      - go tool cover -html=coverage.out
 
-  test:suite:
-    desc: 'Run comprehensive test suite with detailed reporting'
-    cmds:
-      - go run -tags test test_suite.go
-
-  test:api:
-    desc: 'Run some test flow against the real API. For now, it works only on empty database.'
-    cmds:
-      - docker compose -f docker-compose.http-test.yml run --rm http-client
-
-  test:models:
-    desc: 'Run only model tests'
-    cmds:
-      - go test -v ./cmd/app/internal/models
-
-  test:auth:
-    desc: 'Run only authentication tests'
-    cmds:
-      - go test -v ./pkg/auth
-      - go test -v ./pkg/middleware
-
-  test:database:
-    desc: 'Run only database tests'
-    cmds:
-      - go test -v ./cmd/app/internal/database
-
-  test:handlers:
-    desc: 'Run only API handler tests'
-    cmds:
-      - go test -v ./cmd/app/internal/api
-
-  test:integration:
-    desc: 'Run integration tests'
-    cmds:
-      - go test -v -tags integration ./cmd/app
-
-  test:all:
-    desc: 'Run all tests including integration tests'
-    cmds:
-      - go test -v ./...
-      - go test -v -tags integration ./cmd/app
-
-  # Code quality tasks
   fmt:
-    desc: 'Format Go code'
+    desc: 'Format all Go code'
     cmds:
       - go fmt ./...
 
   lint:
-    desc: 'Run Go linter (go vet)'
+    desc: 'Run Go linter'
     cmds:
       - echo 'Running go vet...'
       - go vet ./...
 
-  # Utility tasks
   clean:
     desc: 'Clean build artifacts'
     cmds:
       - rm -rf .bin/
       - echo 'Cleaned build artifacts'
 
-  # CDK Deployment tasks
-  cdk:install:
-    desc: 'Install CDK dependencies'
-    dir: 'deployments/app'
+  # Continue AI tasks
+  continue:refresh-token:
+    desc: 'Refresh msg ai api-token'
     cmds:
-      - go mod download
-      - echo 'CDK dependencies installed'
-
-  cdk:synth:
-    desc: 'Synthesize CDK template (generate CloudFormation) - Docker image built automatically'
-    dir: 'deployments/app'
-    cmds:
-      - cdk synth
-      - echo 'CDK template synthesized to cdk.out/'
-
-  cdk:diff:
-    desc: 'Show differences between current and deployed stack - Docker image built automatically'
-    dir: 'deployments/app'
-    cmds:
-      - cdk diff
-
-  cdk:deploy:
-    desc: 'Deploy infrastructure to AWS using Docker image'
-    dir: 'deployments/app'
-    cmds:
-      - echo 'Deploying to AWS with profile {{.profile | default "default"}}'
-      - echo 'CDK will automatically build the Docker image during deployment...'
-      - cdk deploy --all --require-approval never --profile {{.profile | default "default"}}
-      - echo 'Deployment completed!'
-
-  cdk:deploy:database:
-    desc: 'Deploy only database stack'
-    dir: 'deployments/app'
-    cmds:
-      - cdk deploy glad-database-stack --require-approval never --profile {{.profile | default "default"}}
-
-  cdk:deploy:app:
-    desc: 'Deploy only application stack'
-    dir: 'deployments/app'
-    cmds:
-      - cdk deploy glad-app-stack --require-approval never --profile {{.profile | default "default"}}
-
-  cdk:destroy:
-    desc: 'Destroy AWS infrastructure (use with caution!)'
-    dir: 'deployments/app'
-    cmds:
-      - echo 'WARNING This will destroy all AWS resources!'
-      - cdk destroy --all --force
-
-  cdk:destroy:app:
-    desc: 'Destroy only application stack (keeps database)'
-    dir: 'deployments/app'
-    cmds:
-      - cdk destroy glad-app-stack --force
-
-  cdk:destroy:database:
-    desc: 'Destroy database stack (table will be retained)'
-    dir: 'deployments/app'
-    cmds:
-      - echo 'WARNING Database table will be retained but stack will be removed'
-      - cdk destroy glad-database-stack --force
-
-  cdk:bootstrap:
-    desc: 'Bootstrap CDK in your AWS account (run once)'
-    dir: 'deployments/app'
-    cmds:
-      - cdk bootstrap
-      - echo 'CDK bootstrapped for your AWS account'
-
-  # Full deployment workflow
-  deploy:
-    desc: 'Full deployment workflow using Docker (test and deploy)'
-    cmds:
-      - echo "running command with args - {{.AWS_PROFILE}}"
-      - task: test
-      - task: cdk:deploy
-        vars:
-          profile:
-            sh: echo {{.AWS_PROFILE | default "default"}}
-    requires:
-      vars: [AWS_PROFILE]
-
-  deploy:diff:
-    desc: 'Preview deployment changes with Docker'
-    cmds:
-      - task: cdk:diff
+      - scripts/continue-refresh-token.sh
 
   # Development workflow shortcuts
   dev:full-test:
-    desc: 'Run full development test cycle (format, lint, test, build)'
-    deps: [fmt, lint, test, build:lambda]
+    desc: 'Run full development test cycle'
+    deps: [fmt, lint, test]
 
   dev:quick-test:
-    desc: 'Quick development test (format, test only)'
+    desc: 'Quick development test'
     deps: [fmt, test]

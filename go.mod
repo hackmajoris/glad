@@ -1,4 +1,4 @@
-module github.com/hackmajoris/glad
+module github.com/hackmajoris/glad-stack
 
 go 1.24.0
 

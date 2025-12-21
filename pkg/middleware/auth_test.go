@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hackmajoris/glad/pkg/auth"
-	"github.com/hackmajoris/glad/pkg/config"
+	"github.com/hackmajoris/glad-stack/pkg/auth"
+	"github.com/hackmajoris/glad-stack/pkg/config"
 
 	"github.com/aws/aws-lambda-go/events"
 )

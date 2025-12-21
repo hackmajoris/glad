@@ -21,7 +21,7 @@ func main() {
 	testSuites := []TestSuite{
 		{
 			Name:        "Models",
-			Path:        "./cmd/app/internal/models",
+			Path:        "./cmd/glad/internal/models",
 			Description: "User model validation, password hashing, and data operations",
 		},
 		{
@@ -36,17 +36,17 @@ func main() {
 		},
 		{
 			Name:        "Database",
-			Path:        "./cmd/app/internal/database",
+			Path:        "./cmd/glad/internal/database",
 			Description: "Mock repository operations and concurrent access",
 		},
 		{
 			Name:        "API Handlers",
-			Path:        "./cmd/app/internal/api",
+			Path:        "./cmd/glad/internal/api",
 			Description: "REST API endpoints, registration, login, and user operations",
 		},
 		{
 			Name:        "Main Lambda",
-			Path:        "./cmd/app",
+			Path:        "./cmd/glad",
 			Description: "Lambda handler routing and request processing",
 		},
 	}

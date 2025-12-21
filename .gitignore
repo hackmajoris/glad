@@ -47,7 +47,7 @@ Thumbs.db
 .env
 .env.local
 http-client.env.json
-cmd/app/testdata/api-testing/http-client.env.json
+cmd/glad/testdata/api-testing/http-client.env.json
 .env.*.local
 *.env.*
 *.pem
@@ -87,4 +87,4 @@ yarn-error.log*
 .terraform.lock.hcl
 
 # Go module downloads (keep go.sum)
-vendor/cmd/app/testdata/api-testing/http-client.env.json
+vendor/cmd/glad/testdata/api-testing/http-client.env.json

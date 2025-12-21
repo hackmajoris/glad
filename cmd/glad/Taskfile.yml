@@ -28,6 +28,12 @@ tasks:
     cmds:
       - go test -v ./{{.LAMBDA_PATH}}/...
 
+  test:all:
+    desc: 'Run all tests including integration tests'
+    cmds:
+      - go test -v ./...
+      - go test -v -tags integration ./cmd/glad
+
   test:integration:
     desc: 'Run app integration tests'
     cmds:

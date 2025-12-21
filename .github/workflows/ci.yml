@@ -33,7 +33,7 @@ jobs:
       run: go mod download
     
     - name: Run tests
-      run: task test:all
+      run: task glad:test:all
     
     - name: Run linter
       run: task lint

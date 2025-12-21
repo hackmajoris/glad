@@ -12,19 +12,25 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
+	ENVIRONMENT := "production"
+
+	getResourceId := func(input string) string {
+		return input + "-" + ENVIRONMENT
+	}
+
 	// Create database stack first
-	NewDatabaseStack(app, "glad-database-stack", &DatabaseStackProps{
+	NewDatabaseStack(app, getResourceId("glad-database-stack"), &DatabaseStackProps{
 		awscdk.StackProps{
 			Env: env(),
 		},
-	})
+	}, ENVIRONMENT)
 
 	// Create application stack (depends on database stack)
-	NewAppStack(app, "glad-app-stack", &AppStackProps{
+	NewAppStack(app, getResourceId("glad-app-stack"), &AppStackProps{
 		awscdk.StackProps{
 			Env: env(),
 		},
-	})
+	}, ENVIRONMENT)
 
 	app.Synth(nil)
 }

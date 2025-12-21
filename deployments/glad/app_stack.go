@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -15,36 +16,58 @@ type AppStackProps struct {
 	awscdk.StackProps
 }
 
-func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) awscdk.Stack {
+func NewAppStack(scope constructs.Construct, id string, props *AppStackProps, env string) awscdk.Stack {
 	var sprops awscdk.StackProps
+
 	if props != nil {
 		sprops = props.StackProps
 	}
+
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	ENVIRONMENT := "production"
-	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(ENVIRONMENT), nil)
+	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(env), nil)
+
+	gladFunc := createLambdaResource(stack, id, env)
+	createApiGatewayResource(stack, id, gladFunc, env)
+
+	return stack
+}
+
+func createLambdaResource(stack awscdk.Stack, id string, env string) awslambda.Function {
 
 	// Import table from database stack
-	tableName := awscdk.Fn_ImportValue(jsii.String("GladTableName"))
-	tableArn := awscdk.Fn_ImportValue(jsii.String("GladTableArn"))
+	tableName := awscdk.Fn_ImportValue(jsii.String("GladTableName-" + env))
+	tableArn := awscdk.Fn_ImportValue(jsii.String("GladTableArn-" + env))
+
+	getResourceName := func(input string) *string {
+		return jsii.String(input + "-" + env)
+	}
+
+	// Configure log retention via custom resource
+	funcLogGrop := awslogs.NewLogGroup(stack, jsii.String(id+"-log-group"), &awslogs.LogGroupProps{
+		LogGroupName:  getResourceName("glad-function-log-group"),
+		Retention:     awslogs.RetentionDays_ONE_DAY,
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+	})
 
 	// Create Lambda using Docker image
-	myFunc := awslambda.NewDockerImageFunction(stack, jsii.String(id+"-go-func"), &awslambda.DockerImageFunctionProps{
+	gladFunc := awslambda.NewDockerImageFunction(stack, jsii.String(id+"-go-func"), &awslambda.DockerImageFunctionProps{
 		Code: awslambda.DockerImageCode_FromImageAsset(jsii.String("../../"), &awslambda.AssetImageCodeProps{
 			File: jsii.String("Dockerfile.lambda"),
 		}),
+		FunctionName: getResourceName("glad-function"),
 		Timeout:      awscdk.Duration_Seconds(jsii.Number(30)),
 		MemorySize:   jsii.Number(512),
 		Description:  jsii.String("GLAD Lambda function using Docker image"),
 		Architecture: awslambda.Architecture_X86_64(),
+		LogGroup:     funcLogGrop,
 	})
 
-	myFunc.AddEnvironment(jsii.String("ENVIRONMENT"), jsii.String(ENVIRONMENT), nil)
-	myFunc.AddEnvironment(jsii.String("DYNAMODB_TABLE"), tableName, nil)
+	gladFunc.AddEnvironment(jsii.String("ENVIRONMENT"), jsii.String(env), nil)
+	gladFunc.AddEnvironment(jsii.String("DYNAMODB_TABLE"), tableName, nil)
 
 	// Grant Lambda access to DynamoDB table
-	myFunc.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+	gladFunc.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
 		Effect: awsiam.Effect_ALLOW,
 		Actions: jsii.Strings(
 			"dynamodb:PutItem",
@@ -60,8 +83,13 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		),
 	}))
 
-	api := awsapigateway.NewRestApi(stack, jsii.String(id+"-api-gateway"), &awsapigateway.RestApiProps{
-		RestApiName:    jsii.String("glad-api gateway"),
+	return gladFunc
+
+}
+
+func createApiGatewayResource(stack awscdk.Stack, id string, gladFunc awslambda.DockerImageFunction, env string) {
+	api := awsapigateway.NewRestApi(stack, jsii.String(id+"-api-gateway-"+env), &awsapigateway.RestApiProps{
+		RestApiName:    jsii.String("glad-api-gateway-" + env),
 		Description:    jsii.String("GLAD Stack API"),
 		Deploy:         jsii.Bool(false),
 		CloudWatchRole: jsii.Bool(true),
@@ -73,12 +101,12 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		},
 	})
 
-	integration := awsapigateway.NewLambdaIntegration(myFunc, &awsapigateway.LambdaIntegrationOptions{
+	integration := awsapigateway.NewLambdaIntegration(gladFunc, &awsapigateway.LambdaIntegrationOptions{
 		Proxy: jsii.Bool(true),
 	})
 
 	// Add single wildcard permission for all API Gateway methods
-	myFunc.AddPermission(jsii.String("ApiGatewayInvoke"), &awslambda.Permission{
+	gladFunc.AddPermission(jsii.String("ApiGatewayInvoke"), &awslambda.Permission{
 		Principal: awsiam.NewServicePrincipal(jsii.String("apigateway.amazonaws.com"), nil),
 		Action:    jsii.String("lambda:InvokeFunction"),
 		SourceArn: jsii.String(fmt.Sprintf("arn:aws:execute-api:%s:%s:%s/*/*",
@@ -172,7 +200,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		Api:         api,
 		Description: jsii.String("Deployment triggered by Lambda changes"),
 	})
-	deployment.Node().AddDependency(myFunc)
+	deployment.Node().AddDependency(gladFunc)
 
 	// Create stage with fixed logical ID
 	stage := awsapigateway.NewStage(stack, jsii.String(id+"-api-stage"), &awsapigateway.StageProps{
@@ -208,5 +236,4 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		ExportName:  jsii.String("GladApiUrl"),
 	})
 
-	return stack
 }

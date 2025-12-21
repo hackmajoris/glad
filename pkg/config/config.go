@@ -41,7 +41,7 @@ func Load() *Config {
 			SigningAlg: getEnv("JWT_SIGNING_ALG", "HS256"),
 		},
 		Database: DatabaseConfig{
-			TableName: getEnv("DYNAMODB_TABLE", "users"),
+			TableName: getEnv("DYNAMODB_TABLE", "entities-table"),
 			Region:    getEnv("AWS_REGION", "us-east-1"),
 		},
 

@@ -9,7 +9,7 @@ updates:
     
   # CDK dependencies  
   - package-ecosystem: "gomod"
-    directory: "/deployments/app"
+    directory: "/deployments/glad"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3

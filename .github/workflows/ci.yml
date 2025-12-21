@@ -39,4 +39,7 @@ jobs:
       run: task lint
     
     - name: Build Lambda
-      run: task build:lambda
+      run: task glad:build
+
+    - name: Build Lambda Docker
+      run: task glad:build:docker

@@ -28,10 +28,23 @@ tasks:
     cmds:
       - go test -v ./{{.LAMBDA_PATH}}/...
 
+  test:all:
+    desc: 'Run all tests including integration tests'
+    cmds:
+      - go test -v ./...
+      - go test -v -tags integration ./cmd/glad
+
   test:integration:
     desc: 'Run app integration tests'
     cmds:
       - go test -v -tags integration ./{{.LAMBDA_PATH}}
+
+  test:api:
+    desc: 'Testing some flows against the real API. 
+    Note: The tests should will run successfully just for the first time. The database should be cleared in order to run them again
+    This limitation will be handled with the next iterations'
+    cmds:
+      - docker compose -f docker-compose.http-test.yml run --rm http-client
 
   cdk:synth:
     desc: 'Synthesize app CDK template'

@@ -22,7 +22,7 @@ jobs:
       run: npm i -g @go-task/cli
     
     - name: Cache Go modules
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -33,10 +33,13 @@ jobs:
       run: go mod download
     
     - name: Run tests
-      run: task test:all
+      run: task glad:test:all
     
     - name: Run linter
       run: task lint
     
     - name: Build Lambda
-      run: task build:lambda
+      run: task glad:build
+
+    - name: Build Lambda Docker
+      run: task glad:build:docker

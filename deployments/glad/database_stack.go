@@ -11,19 +11,19 @@ type DatabaseStackProps struct {
 	awscdk.StackProps
 }
 
-func NewDatabaseStack(scope constructs.Construct, id string, props *DatabaseStackProps) awscdk.Stack {
+func NewDatabaseStack(scope constructs.Construct, id string, props *DatabaseStackProps, env string) awscdk.Stack {
 	var sprops awscdk.StackProps
+
 	if props != nil {
 		sprops = props.StackProps
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	ENVIRONMENT := "production"
-	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(ENVIRONMENT), nil)
+	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(env), nil)
 
 	// Create DynamoDB table
 	entitiesTable := awsdynamodb.NewTableV2(stack, jsii.String(id+"-entities-table"), &awsdynamodb.TablePropsV2{
-		TableName: jsii.String("glad-entities"),
+		TableName: jsii.String("glad-entities-" + env),
 		PartitionKey: &awsdynamodb.Attribute{
 			Name: jsii.String("EntityType"),
 			Type: awsdynamodb.AttributeType_STRING,
@@ -78,13 +78,13 @@ func NewDatabaseStack(scope constructs.Construct, id string, props *DatabaseStac
 	awscdk.NewCfnOutput(stack, jsii.String("TableName"), &awscdk.CfnOutputProps{
 		Value:       entitiesTable.TableName(),
 		Description: jsii.String("DynamoDB table name"),
-		ExportName:  jsii.String("GladTableName"),
+		ExportName:  jsii.String("GladTableName-" + env),
 	})
 
 	awscdk.NewCfnOutput(stack, jsii.String("TableArn"), &awscdk.CfnOutputProps{
 		Value:       entitiesTable.TableArn(),
 		Description: jsii.String("DynamoDB table ARN"),
-		ExportName:  jsii.String("GladTableArn"),
+		ExportName:  jsii.String("GladTableArn-" + env),
 	})
 
 	return stack

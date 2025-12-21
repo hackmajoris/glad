@@ -1,0 +1,50 @@
+# CDK output directory - MUST be excluded to prevent recursive bundling
+deployments/app/cdk.out
+deployments/**/cdk.out
+**/cdk.out
+
+# Build artifacts
+.bin/
+*.zip
+coverage.out
+coverage.html
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+.claude/
+.continue/
+.amazonq/
+
+# Environment files
+.env
+.env.*
+
+# Test files
+**/*_test.go
+test_suite.go
+
+# Documentation
+*.md
+docs/
+site/
+
+# Docker
+.dockerignore
+docker-compose*.yml
+
+# Node modules (if any)
+node_modules/
+
+# Taskfile
+Taskfile.yml
+
+# Scripts
+scripts/
+
+# GitHub
+.github/

@@ -4,7 +4,7 @@ services:
   http-client:
     image: jetbrains/intellij-http-client
     volumes:
-      - ./docs/api-testing:/workdir
+      - ./cmd/app/testdata/api-testing:/workdir
     working_dir: /workdir
     command: >
       --env=dev

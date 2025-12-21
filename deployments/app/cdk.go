@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 
 	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
@@ -97,27 +99,44 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	// Add environment tag
 	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String(ENVIRONMENT), nil)
 
-	// Create Lambda
-	myFunc := awslambda.NewFunction(stack, jsii.String(id+"-go-func"), &awslambda.FunctionProps{
-		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("../../.bin/lambda-function.zip"), nil),
-		Handler: jsii.String("main"),
+	// Create Lambda using Docker image
+	myFunc := awslambda.NewDockerImageFunction(stack, jsii.String(id+"-go-func"), &awslambda.DockerImageFunctionProps{
+		Code: awslambda.DockerImageCode_FromImageAsset(jsii.String("../../"), &awslambda.AssetImageCodeProps{
+			File: jsii.String("Dockerfile"),
+		}),
+		Timeout:      awscdk.Duration_Seconds(jsii.Number(30)),
+		MemorySize:   jsii.Number(512),
+		Description:  jsii.String("GLAD Lambda function using Docker image"),
+		Architecture: awslambda.Architecture_X86_64(),
 	})
 
 	myFunc.AddEnvironment(jsii.String("ENVIRONMENT"), jsii.String(ENVIRONMENT), nil)
 
 	////  Create table | Grant Lambda read/write access to DynamoDB table
 	entitiesTable := createEntitiesTable(stack, jsii.String(id+"-entities-table-"+ENVIRONMENT), ENVIRONMENT)
-	entitiesTable.GrantReadWriteData(myFunc)
+	// Grant access to table and all GSIs with wildcard to avoid policy size issues
+	myFunc.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect: awsiam.Effect_ALLOW,
+		Actions: jsii.Strings(
+			"dynamodb:PutItem",
+			"dynamodb:GetItem",
+			"dynamodb:UpdateItem",
+			"dynamodb:DeleteItem",
+			"dynamodb:Query",
+			"dynamodb:Scan",
+		),
+		Resources: jsii.Strings(
+			*entitiesTable.TableArn(),
+			*entitiesTable.TableArn()+"/index/*",
+		),
+	}))
 
 	api := awsapigateway.NewRestApi(stack, jsii.String(id+"-api-gateway"), &awsapigateway.RestApiProps{
 		RestApiName: jsii.String("glad-api gateway"),
 		Description: jsii.String("GLAD Stack API"),
-		DeployOptions: &awsapigateway.StageOptions{
-			StageName:            jsii.String("prod"),
-			ThrottlingBurstLimit: jsii.Number(200),
-			ThrottlingRateLimit:  jsii.Number(100),
-		},
+		// Don't use DeployOptions - we manage deployment explicitly below
+		Deploy:         jsii.Bool(false), // Disable automatic deployment
+		CloudWatchRole: jsii.Bool(true),  // Auto-create IAM role for CloudWatch Logs
 		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
 			AllowOrigins:     jsii.Strings("*"),
 			AllowCredentials: jsii.Bool(true),
@@ -126,14 +145,31 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		},
 	})
 
-	// Create Lambda integration
-	integration := awsapigateway.NewLambdaIntegration(myFunc, nil)
+	// Create Lambda integration with explicit proxy configuration
+	// AWS_PROXY mode passes the entire request to Lambda and expects Lambda to return proper API Gateway response
+	integration := awsapigateway.NewLambdaIntegration(myFunc, &awsapigateway.LambdaIntegrationOptions{
+		Proxy: jsii.Bool(true), // Explicitly enable AWS_PROXY mode
+	})
+
+	// Add single wildcard permission for all API Gateway methods to avoid policy size limit
+	myFunc.AddPermission(jsii.String("ApiGatewayInvoke"), &awslambda.Permission{
+		Principal: awsiam.NewServicePrincipal(jsii.String("apigateway.amazonaws.com"), nil),
+		Action:    jsii.String("lambda:InvokeFunction"),
+		SourceArn: jsii.String(fmt.Sprintf("arn:aws:execute-api:%s:%s:%s/*/*",
+			*stack.Region(),
+			*stack.Account(),
+			*api.RestApiId())),
+	})
 
 	registerResource := api.Root().AddResource(jsii.String("register"), nil)
-	registerResource.AddMethod(jsii.String("POST"), integration, nil)
+	registerResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
 
 	loginResource := api.Root().AddResource(jsii.String("login"), nil)
-	loginResource.AddMethod(jsii.String("POST"), integration, nil)
+	loginResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
 
 	protectedResource := api.Root().AddResource(jsii.String("protected"), nil)
 	protectedResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
@@ -233,6 +269,28 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		AuthorizationType: awsapigateway.AuthorizationType_NONE,
 	})
 
+	// Force API Gateway to create new deployment when Lambda changes
+	// This prevents deployment drift issues when switching between ZIP and Docker images
+	deployment := awsapigateway.NewDeployment(stack, jsii.String(id+"-api-deployment"), &awsapigateway.DeploymentProps{
+		Api:         api,
+		Description: jsii.String("Deployment triggered by Lambda changes"),
+	})
+
+	// Add dependency on Lambda function to trigger redeployment when Lambda changes
+	deployment.Node().AddDependency(myFunc)
+
+	// Update stage to use the explicit deployment
+	// Use fixed logical ID for stable updates
+	stage := awsapigateway.NewStage(stack, jsii.String(id+"-api-stage"), &awsapigateway.StageProps{
+		Deployment:           deployment,
+		StageName:            jsii.String("prod"),
+		ThrottlingBurstLimit: jsii.Number(200),
+		ThrottlingRateLimit:  jsii.Number(100),
+		LoggingLevel:         awsapigateway.MethodLoggingLevel_INFO,
+		DataTraceEnabled:     jsii.Bool(true),
+		MetricsEnabled:       jsii.Bool(true),
+	})
+
 	// Create UsagePlan AFTER all methods are defined
 	awsapigateway.NewUsagePlan(stack, jsii.String(id+"-api-gateway-usage-plan"), &awsapigateway.UsagePlanProps{
 		Name:        jsii.String(id + "-api-gateway-usage-plan"),
@@ -244,9 +302,16 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		ApiStages: &[]*awsapigateway.UsagePlanPerApiStage{
 			{
 				Api:   api,
-				Stage: api.DeploymentStage(),
+				Stage: stage, // Use explicit stage instead of api.DeploymentStage()
 			},
 		},
+	})
+
+	// Output the API URL
+	awscdk.NewCfnOutput(stack, jsii.String("ApiUrl"), &awscdk.CfnOutputProps{
+		Value:       jsii.String(fmt.Sprintf("https://%s.execute-api.%s.amazonaws.com/%s", *api.RestApiId(), *stack.Region(), *stage.StageName())),
+		Description: jsii.String("API Gateway endpoint URL"),
+		ExportName:  jsii.String("GladApiUrl"),
 	})
 
 	return stack

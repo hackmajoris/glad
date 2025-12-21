@@ -14,13 +14,84 @@ tasks:
 
   # Build tasks
   build:lambda:
-    desc: 'Build Lambda function for AWS deployment'
+    desc: 'Build Lambda function for AWS deployment (legacy ZIP method)'
     cmds:
       - echo 'Building Lambda function...'
       - mkdir -p .bin
       - env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda -ldflags='-s -w' -o .bin/bootstrap ./cmd/app
       - cd .bin && zip lambda-function.zip bootstrap
       - echo 'success!'
+
+  build:docker:
+    desc: 'Build Docker image for Lambda deployment'
+    cmds:
+      - echo 'Building Docker image for Lambda...'
+      - docker build -t glad-lambda:latest .
+      - echo 'Docker image built successfully!'
+
+  build:docker:test:
+    desc: 'Test Docker image locally using Lambda Runtime Interface Emulator'
+    cmds:
+      - echo 'Testing Docker image locally...'
+      - echo 'Starting Lambda container in background on port 9000...'
+      - docker run -d --name glad-lambda-test --rm -p 9000:8080 --env-file .env glad-lambda:latest
+      - echo 'Waiting for container to be ready...'
+      - sleep 3
+      - echo ''
+      - echo '🧪 Testing Lambda with GET /protected request...'
+      - |
+        curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "httpMethod": "GET",
+            "path": "/protected",
+            "headers": {"Content-Type": "application/json"},
+            "body": null
+          }' && echo ""
+      - echo ''
+      - echo '📋 Container logs:'
+      - docker logs glad-lambda-test
+      - echo ''
+      - echo '🛑 Stopping container...'
+      - docker stop glad-lambda-test
+      - echo '✅ Test complete!'
+
+  build:docker:test:interactive:
+    desc: 'Run Docker Lambda container interactively (stays running, stop with Ctrl+C)'
+    cmds:
+      - echo 'Starting Lambda container on port 9000...'
+      - echo 'Send requests to http://localhost:9000/2015-03-31/functions/function/invocations'
+      - echo 'Stop with Ctrl+C'
+      - echo ''
+      - docker run --rm --name glad-lambda-interactive -p 9000:8080 --env-file .env glad-lambda:latest
+
+  debug:lambda:
+    desc: 'Debug Lambda function deployment issues'
+    cmds:
+      - ./debug-lambda.sh
+
+  debug:lambda:local:
+    desc: 'Test Lambda Docker image locally'
+    cmds:
+      - ./test-lambda-local.sh
+
+  debug:apigateway:
+    desc: 'Debug API Gateway integration issues'
+    cmds:
+      - ./debug-apigateway.sh
+
+  debug:force-deploy:
+    desc: 'Force API Gateway stage redeployment (fixes deployment drift)'
+    cmds:
+      - ./force-stage-deploy.sh
+
+  debug:logs:
+    desc: 'Tail Lambda CloudWatch logs in real-time'
+    cmds:
+      - |
+        FUNCTION_NAME=$(aws cloudformation describe-stack-resources --stack-name glad-stack --profile {{.AWS_PROFILE | default "default"}} --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text)
+        echo "Tailing logs for function: $FUNCTION_NAME"
+        aws logs tail "/aws/lambda/$FUNCTION_NAME" --follow --profile {{.AWS_PROFILE | default "default"}}
 
   # Development tasks
   
@@ -50,10 +121,9 @@ tasks:
       - go run -tags test test_suite.go
 
   test:api:
-    desc: 'Run API integration tests against local server'
+    desc: 'Run some test flow against the real API. For now, it works only on empty database.'
     cmds:
-      - chmod +x cmd/app/testdata/test-api.sh
-      - cmd/app/testdata/test-api.sh
+      - docker compose -f docker-compose.http-test.yml run --rm http-client
 
   test:models:
     desc: 'Run only model tests'
@@ -77,7 +147,7 @@ tasks:
       - go test -v ./cmd/app/internal/api
 
   test:integration:
-    desc: 'Run integration tests (replaces test-api.sh and local-server)'
+    desc: 'Run integration tests'
     cmds:
       - go test -v -tags integration ./cmd/app
 
@@ -115,26 +185,24 @@ tasks:
       - echo 'CDK dependencies installed'
 
   cdk:synth:
-    desc: 'Synthesize CDK template (generate CloudFormation)'
+    desc: 'Synthesize CDK template (generate CloudFormation) - Docker image built automatically'
     dir: 'deployments/app'
-    deps: [build:lambda]
     cmds:
       - cdk synth
       - echo 'CDK template synthesized to cdk.out/'
 
   cdk:diff:
-    desc: 'Show differences between current and deployed stack'
+    desc: 'Show differences between current and deployed stack - Docker image built automatically'
     dir: 'deployments/app'
-    deps: [build:lambda]
     cmds:
       - cdk diff
 
   cdk:deploy:
-    desc: 'Deploy infrastructure to AWS'
+    desc: 'Deploy infrastructure to AWS using Docker image'
     dir: 'deployments/app'
-    deps: [ build:lambda ]
     cmds:
       - echo 'Deploying to AWS with profile {{.profile | default "default"}}'
+      - echo 'CDK will automatically build the Docker image during deployment...'
       - cdk deploy --require-approval never --profile {{.profile | default "default"}}
       - echo 'Deployment completed!'
 
@@ -154,12 +222,10 @@ tasks:
 
   # Full deployment workflow
   deploy:
-    desc: 'Full deployment workflow (test, build, deploy)'
-
+    desc: 'Full deployment workflow using Docker (test and deploy)'
     cmds:
       - echo "running command with args - {{.AWS_PROFILE}}"
       - task: test
-      - task: build:lambda
       - task: cdk:deploy
         vars:
           profile:
@@ -168,8 +234,9 @@ tasks:
       vars: [AWS_PROFILE]
 
   deploy:diff:
-    desc: 'Preview deployment changes'
-    deps: [build:lambda, cdk:diff]
+    desc: 'Preview deployment changes with Docker'
+    cmds:
+      - task: cdk:diff
 
   # Development workflow shortcuts
   dev:full-test:

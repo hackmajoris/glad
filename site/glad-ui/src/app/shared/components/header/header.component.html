@@ -1,0 +1,73 @@
+<div class="layout-topbar">
+  <div class="layout-topbar-logo-container">
+    <button class="layout-menu-button layout-topbar-action" (click)="onMenuButtonClick()">
+      <i class="pi pi-bars"></i>
+    </button>
+    <a class="layout-topbar-logo" routerLink="/">
+      <span>GLAD Stack</span>
+    </a>
+  </div>
+
+  <ng-container *ngIf="currentUser; else loginButtons">
+    <div class="layout-topbar-actions">
+      <div class="layout-config-menu">
+        <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
+          <i [ngClass]="{ 'pi': true, 'pi-moon': isDarkMode(), 'pi-sun': !isDarkMode() }"></i>
+        </button>
+        <div class="relative">
+          <button
+            type="button"
+            class="layout-topbar-action layout-topbar-action-highlight"
+            pStyleClass="@next"
+            toggleClass="hidden"
+            [hideOnOutsideClick]="true"
+          >
+            <i class="pi pi-palette"></i>
+          </button>
+          <app-configurator />
+        </div>
+      </div>
+
+      <button class="layout-topbar-menu-button layout-topbar-action" pStyleClass="@next" toggleClass="hidden" [hideOnOutsideClick]="true">
+        <i class="pi pi-ellipsis-v"></i>
+      </button>
+
+      <div class="layout-topbar-menu hidden lg:block">
+        <div class="layout-topbar-menu-content">
+          <button type="button" class="layout-topbar-action" routerLink="/profile">
+            <i class="pi pi-user"></i>
+            <span>Profile</span>
+          </button>
+          <button type="button" class="layout-topbar-action" routerLink="/skills">
+            <i class="pi pi-list"></i>
+            <span>Skills</span>
+          </button>
+          <button type="button" class="layout-topbar-action" routerLink="/users">
+            <i class="pi pi-users"></i>
+            <span>Users</span>
+          </button>
+          <button type="button" class="layout-topbar-action" (click)="onLogout()">
+            <i class="pi pi-sign-out"></i>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #loginButtons>
+    <div class="layout-topbar-actions">
+      <div class="flex gap-2">
+        <p-button
+          label="Login"
+          [text]="true"
+          routerLink="/login">
+        </p-button>
+        <p-button
+          label="Sign Up"
+          routerLink="/signup">
+        </p-button>
+      </div>
+    </div>
+  </ng-template>
+</div>

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awscognito"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
@@ -105,6 +106,17 @@ func createApiGatewayResource(stack awscdk.Stack, id string, gladFunc awslambda.
 		Proxy: jsii.Bool(true),
 	})
 
+	// Import Cognito User Pool from auth stack
+	userPoolArn := awscdk.Fn_ImportValue(jsii.String("GladUserPoolArn-" + env))
+	userPool := awscognito.UserPool_FromUserPoolArn(stack, jsii.String(id+"-imported-user-pool"), userPoolArn)
+
+	// Create Cognito User Pools Authorizer
+	cognitoAuthorizer := awsapigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String(id+"-cognito-authorizer"), &awsapigateway.CognitoUserPoolsAuthorizerProps{
+		CognitoUserPools: &[]awscognito.IUserPool{userPool},
+		AuthorizerName:   jsii.String("glad-cognito-authorizer-" + env),
+		IdentitySource:   jsii.String("method.request.header.Authorization"),
+	})
+
 	// Add single wildcard permission for all API Gateway methods
 	gladFunc.AddPermission(jsii.String("ApiGatewayInvoke"), &awslambda.Permission{
 		Principal: awsiam.NewServicePrincipal(jsii.String("apigateway.amazonaws.com"), nil),
@@ -115,84 +127,91 @@ func createApiGatewayResource(stack awscdk.Stack, id string, gladFunc awslambda.
 			*api.RestApiId())),
 	})
 
-	// Define API routes
-	registerResource := api.Root().AddResource(jsii.String("register"), nil)
-	registerResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
-	})
-
-	loginResource := api.Root().AddResource(jsii.String("login"), nil)
-	loginResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
-	})
+	// Define API routes - All routes now protected with Cognito authorizer
+	// Note: /register and /login removed - Cognito handles authentication
 
 	protectedResource := api.Root().AddResource(jsii.String("protected"), nil)
 	protectedResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
 	userResource := api.Root().AddResource(jsii.String("user"), nil)
 	userResource.AddMethod(jsii.String("PUT"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
 	usersResource := api.Root().AddResource(jsii.String("users"), nil)
 	usersResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
 	meResource := api.Root().AddResource(jsii.String("me"), nil)
 	meResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
-	// Skill Management Endpoints
+	// Skill Management Endpoints - All protected with Cognito
 	usersSkillsResource := usersResource.AddResource(jsii.String("{username}"), nil)
 	skillsResource := usersSkillsResource.AddResource(jsii.String("skills"), nil)
 	skillsResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 	skillsResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
 	skillResource := skillsResource.AddResource(jsii.String("{skillName}"), nil)
 	skillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 	skillResource.AddMethod(jsii.String("PUT"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 	skillResource.AddMethod(jsii.String("DELETE"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
-	// Global skill query endpoint
+	// Global skill query endpoint - Protected with Cognito
 	skillsGlobalResource := api.Root().AddResource(jsii.String("skills"), nil)
 	skillNameResource := skillsGlobalResource.AddResource(jsii.String("{skillName}"), nil)
 	usersWithSkillResource := skillNameResource.AddResource(jsii.String("users"), nil)
 	usersWithSkillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
-	// Master Skills Management Endpoints
+	// Master Skills Management Endpoints - Protected with Cognito
 	masterSkillsResource := api.Root().AddResource(jsii.String("master-skills"), nil)
 	masterSkillsResource.AddMethod(jsii.String("POST"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 	masterSkillsResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
 	masterSkillResource := masterSkillsResource.AddResource(jsii.String("{skillID}"), nil)
 	masterSkillResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 	masterSkillResource.AddMethod(jsii.String("PUT"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 	masterSkillResource.AddMethod(jsii.String("DELETE"), integration, &awsapigateway.MethodOptions{
-		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        cognitoAuthorizer,
 	})
 
 	// Create deployment

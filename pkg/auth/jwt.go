@@ -1,3 +1,19 @@
+// Package auth provides authentication utilities for the GLAD Stack application.
+//
+// DEPRECATED: Custom JWT generation and validation (TokenService, JWTClaims) are deprecated
+// and will be removed in a future version. Authentication is now handled by AWS Cognito.
+//
+// What's deprecated:
+//   - TokenService.GenerateToken() - Use Cognito SignIn API instead
+//   - TokenService.ValidateToken() - Use Cognito User Pools Authorizer at API Gateway
+//   - JWTClaims - Use CognitoClaims instead (see cognito.go)
+//
+// What's still active:
+//   - CognitoClaims - New struct for extracting Cognito JWT claims
+//   - ExtractCognitoClaimsFromRequest() - Extract user info from Cognito-validated requests
+//
+// Migration: Update your authentication flow to use AWS Cognito for user management
+// and AWS Amplify SDK in the frontend for authentication operations.
 package auth
 
 import (
@@ -16,17 +32,20 @@ var (
 )
 
 // User interface for JWT token generation
+// DEPRECATED: Used for custom JWT generation which is now handled by Cognito
 type User interface {
 	GetUsername() string
 }
 
 // JWTClaims represents the JWT claims
+// DEPRECATED: Use CognitoClaims instead for extracting user info from Cognito-validated requests
 type JWTClaims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
 // TokenService handles JWT operations
+// DEPRECATED: JWT generation and validation now handled by AWS Cognito
 type TokenService struct {
 	secretKey []byte
 	expiry    time.Duration

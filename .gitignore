@@ -14,6 +14,7 @@ main
 .mcp.json
 changes.md
 
+deployments/glad/cdk
 scripts/continue-refresh-token.sh
 
 # Test binaries and coverage
@@ -88,3 +89,6 @@ yarn-error.log*
 
 # Go module downloads (keep go.sum)
 vendor/cmd/glad/testdata/api-testing/http-client.env.json
+
+# Amplify configuration (generated from deployment)
+amplify_outputs.json

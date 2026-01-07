@@ -24,14 +24,21 @@ type Route struct {
 
 // Router handles HTTP routing for Lambda
 type Router struct {
-	routes map[string]map[string]Route // path -> method -> route
+	routes           map[string]map[string]Route // path -> method -> route
+	globalMiddleware []Middleware
 }
 
 // New creates a new Router
 func New() *Router {
 	return &Router{
-		routes: make(map[string]map[string]Route),
+		routes:           make(map[string]map[string]Route),
+		globalMiddleware: make([]Middleware, 0),
 	}
+}
+
+// Use adds global middleware that applies to all routes
+func (r *Router) Use(middleware Middleware) {
+	r.globalMiddleware = append(r.globalMiddleware, middleware)
 }
 
 // Handle registers a route with optional middleware
@@ -83,8 +90,15 @@ func (r *Router) Route(request events.APIGatewayProxyRequest) (events.APIGateway
 
 	// Apply middleware in reverse order (last registered runs first around handler)
 	handler := route.Handler
+
+	// First apply route-specific middleware
 	for i := len(route.Middleware) - 1; i >= 0; i-- {
 		handler = route.Middleware[i](handler)
+	}
+
+	// Then apply global middleware (outermost)
+	for i := len(r.globalMiddleware) - 1; i >= 0; i-- {
+		handler = r.globalMiddleware[i](handler)
 	}
 
 	return handler(request)

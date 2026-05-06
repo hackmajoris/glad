@@ -32,9 +32,10 @@ func main() {
 	apiHandler := handler.New(userService, skillService)
 	masterSkillHandler := handler.NewMasterSkillHandler(masterSkillService)
 	authMiddleware := middleware.NewAuthMiddleware(tokenService)
+	corsMiddleware := middleware.NewCORSMiddleware([]string{"*"}) // Allow all origins for now
 
 	// Setup router
-	r := setupRouter(apiHandler, masterSkillHandler, authMiddleware)
+	r := setupRouter(apiHandler, masterSkillHandler, authMiddleware, corsMiddleware)
 
 	// Start Lambda
 	lambda.Start(func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -43,36 +44,35 @@ func main() {
 	})
 }
 
-func setupRouter(h *handler.Handler, msh *handler.MasterSkillHandler, auth *middleware.AuthMiddleware) *router.Router {
+func setupRouter(h *handler.Handler, msh *handler.MasterSkillHandler, auth *middleware.AuthMiddleware, cors *middleware.CORSMiddleware) *router.Router {
 	r := router.New()
 
-	// Public routes
-	r.POST("/register", h.Register)
-	r.POST("/login", h.Login)
+	// Apply CORS middleware globally
+	r.Use(cors.AddCORSHeaders())
 
 	// Protected routes - User Management
-	r.GET("/protected", h.Protected, auth.RequireAuth())
-	r.GET("/me", h.GetCurrentUser, auth.RequireAuth())
-	r.PUT("/user", h.UpdateUser, auth.RequireAuth())
-	r.GET("/users", h.ListUsers, auth.RequireAuth())
+	// Note: Authentication is handled by API Gateway Cognito Authorizer
+	r.GET("/me", h.GetCurrentUser)
+	r.PUT("/user", h.UpdateUser)
+	r.GET("/users", h.ListUsers)
 
 	// Protected routes - Master Skill Management
-	r.POST("/master-skills", msh.CreateMasterSkill, auth.RequireAuth())
-	r.GET("/master-skills", msh.ListMasterSkills, auth.RequireAuth())
-	r.GET("/master-skills/{skillID}", msh.GetMasterSkill, auth.RequireAuth())
-	r.PUT("/master-skills/{skillID}", msh.UpdateMasterSkill, auth.RequireAuth())
-	r.DELETE("/master-skills/{skillID}", msh.DeleteMasterSkill, auth.RequireAuth())
+	r.POST("/master-skills", msh.CreateMasterSkill)
+	r.GET("/master-skills", msh.ListMasterSkills)
+	r.GET("/master-skills/{skillID}", msh.GetMasterSkill)
+	r.PUT("/master-skills/{skillID}", msh.UpdateMasterSkill)
+	r.DELETE("/master-skills/{skillID}", msh.DeleteMasterSkill)
 
 	// Protected routes - User Skill Management
 	// Manage skills for a specific user
-	r.POST("/users/{username}/skills", h.AddSkill, auth.RequireAuth())
-	r.GET("/users/{username}/skills", h.ListSkillsForUser, auth.RequireAuth())
-	r.GET("/users/{username}/skills/{skillName}", h.GetSkill, auth.RequireAuth())
-	r.PUT("/users/{username}/skills/{skillName}", h.UpdateSkill, auth.RequireAuth())
-	r.DELETE("/users/{username}/skills/{skillName}", h.DeleteSkill, auth.RequireAuth())
+	r.POST("/users/{username}/skills", h.AddSkill)
+	r.GET("/users/{username}/skills", h.ListSkillsForUser)
+	r.GET("/users/{username}/skills/{skillName}", h.GetSkill)
+	r.PUT("/users/{username}/skills/{skillName}", h.UpdateSkill)
+	r.DELETE("/users/{username}/skills/{skillName}", h.DeleteSkill)
 
 	// Query users by skill (cross-user queries using GSI)
-	r.GET("/skills/{skillName}/users", h.ListUsersBySkill, auth.RequireAuth())
+	r.GET("/skills/{skillName}/users", h.ListUsersBySkill)
 
 	return r
 }

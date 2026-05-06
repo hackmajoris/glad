@@ -32,69 +32,11 @@ func New(userService *service.UserService, skillService *service.SkillService) *
 	}
 }
 
-// Register handles user registration
-func (h *Handler) Register(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	var req dto.RegisterRequest
-	if err := json.Unmarshal([]byte(request.Body), &req); err != nil {
-		return errorResponse(http.StatusBadRequest, "Invalid request body"), nil
-	}
-
-	// Validate input at handler layer
-	if err := h.validator.ValidateRegisterInput(req.Username, req.Name, req.Password); err != nil {
-		return h.handleServiceError(err), nil
-	}
-
-	_, err := h.userService.Register(req.Username, req.Name, req.Password)
-	if err != nil {
-		return h.handleServiceError(err), nil
-	}
-
-	return successResponse(http.StatusCreated, dto.MessageResponse{
-		Message: "User created successfully",
-	}), nil
-}
-
-// Login handles user authentication
-func (h *Handler) Login(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	var req dto.LoginRequest
-	if err := json.Unmarshal([]byte(request.Body), &req); err != nil {
-		return errorResponse(http.StatusBadRequest, "Invalid request body"), nil
-	}
-
-	// Validate input at handler layer
-	if err := h.validator.ValidateLoginInput(req.Username, req.Password); err != nil {
-		return h.handleServiceError(err), nil
-	}
-
-	result, err := h.userService.Login(req.Username, req.Password)
-	if err != nil {
-		return h.handleServiceError(err), nil
-	}
-
-	return successResponse(http.StatusOK, dto.TokenResponse{
-		AccessToken: result.AccessToken,
-		TokenType:   result.TokenType,
-	}), nil
-}
-
-// Protected handles protected resource access
-func (h *Handler) Protected(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	claims, ok := request.RequestContext.Authorizer["claims"].(*auth.JWTClaims)
-	if !ok {
-		return errorResponse(http.StatusUnauthorized, "Invalid token claims"), nil
-	}
-
-	return successResponse(http.StatusOK, dto.ProtectedResponse{
-		Message:  "Access granted to protected resource",
-		Username: claims.Username,
-	}), nil
-}
-
 // UpdateUser handles user profile updates
 func (h *Handler) UpdateUser(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	claims, ok := request.RequestContext.Authorizer["claims"].(*auth.JWTClaims)
-	if !ok {
-		return errorResponse(http.StatusUnauthorized, "Invalid token claims"), nil
+	claims, err := auth.ExtractCognitoClaimsFromRequest(request)
+	if err != nil {
+		return errorResponse(http.StatusUnauthorized, "Invalid authentication: "+err.Error()), nil
 	}
 
 	var req dto.UpdateUserRequest
@@ -106,11 +48,8 @@ func (h *Handler) UpdateUser(request events.APIGatewayProxyRequest) (events.APIG
 	if err := h.validator.ValidateOptionalName(req.Name); err != nil {
 		return h.handleServiceError(err), nil
 	}
-	if err := h.validator.ValidateOptionalPassword(req.Password); err != nil {
-		return h.handleServiceError(err), nil
-	}
 
-	err := h.userService.UpdateUser(claims.Username, req.Name, req.Password)
+	err = h.userService.UpdateUser(claims.Username, req.Name, req.Password)
 	if err != nil {
 		return h.handleServiceError(err), nil
 	}
@@ -131,10 +70,12 @@ func (h *Handler) ListUsers(request events.APIGatewayProxyRequest) (events.APIGa
 }
 
 // GetCurrentUser handles retrieving the current authenticated user's information
+// This handler works with Cognito authentication. The user profile in DynamoDB is automatically
+// created by the Cognito Post Confirmation Lambda trigger when the user confirms their email.
 func (h *Handler) GetCurrentUser(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	claims, ok := request.RequestContext.Authorizer["claims"].(*auth.JWTClaims)
-	if !ok {
-		return errorResponse(http.StatusUnauthorized, "Invalid token claims"), nil
+	claims, err := auth.ExtractCognitoClaimsFromRequest(request)
+	if err != nil {
+		return errorResponse(http.StatusUnauthorized, "Invalid authentication: "+err.Error()), nil
 	}
 
 	log := logger.WithComponent("handler").With("operation", "GetCurrentUser", "username", claims.Username)

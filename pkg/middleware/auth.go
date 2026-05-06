@@ -1,3 +1,12 @@
+// Package middleware provides HTTP middleware functions for the GLAD Stack application.
+//
+// DEPRECATED: This package is deprecated and will be removed in a future version.
+// Authentication is now handled by AWS Cognito User Pools Authorizer at the API Gateway level.
+// The Cognito authorizer validates JWT tokens before requests reach the Lambda function,
+// eliminating the need for this custom JWT middleware.
+//
+// Migration: Remove usage of AuthMiddleware from your router setup and rely on
+// API Gateway Cognito authorizer configuration instead.
 package middleware
 
 import (
@@ -16,6 +25,7 @@ import (
 type HandlerFunc func(events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 
 // AuthMiddleware provides JWT authentication middleware
+// DEPRECATED: Use AWS Cognito User Pools Authorizer at API Gateway level instead.
 type AuthMiddleware struct {
 	tokenService *auth.TokenService
 }

@@ -25,8 +25,22 @@ func main() {
 		},
 	}, ENVIRONMENT)
 
-	// Create application stack (depends on database stack)
+	// Create authentication stack (Cognito User Pool)
+	NewAuthStack(app, getResourceId("glad-auth-stack"), &AuthStackProps{
+		awscdk.StackProps{
+			Env: env(),
+		},
+	}, ENVIRONMENT)
+
+	// Create application stack (depends on database and auth stacks)
 	NewAppStack(app, getResourceId("glad-app-stack"), &AppStackProps{
+		awscdk.StackProps{
+			Env: env(),
+		},
+	}, ENVIRONMENT)
+
+	// Create frontend hosting stack (S3 + CloudFront)
+	NewFrontendStack(app, getResourceId("glad-frontend-stack"), &FrontendStackProps{
 		awscdk.StackProps{
 			Env: env(),
 		},

@@ -1,0 +1,97 @@
+/* Mobile-first responsive design */
+.user-list-container {
+  padding: 0.5rem;
+}
+
+.user-list-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-list-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.user-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.user-card-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-username {
+  font-size: 0.75rem;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Tablet and up */
+@media (min-width: 640px) {
+  .user-list-container {
+    padding: 1rem;
+  }
+  
+  .user-list-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .user-list-title {
+    font-size: 1.875rem;
+  }
+  
+  .user-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .user-card-content {
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .user-name {
+    font-size: 1.125rem;
+  }
+  
+  .user-username {
+    font-size: 0.875rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .user-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

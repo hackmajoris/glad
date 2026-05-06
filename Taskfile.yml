@@ -60,3 +60,83 @@ tasks:
   dev:quick-test:
     desc: 'Quick development test'
     deps: [fmt, test]
+
+  # Frontend tasks
+  frontend:install:
+    desc: 'Install Angular dependencies'
+    dir: site/glad-ui
+    cmds:
+      - npm install
+
+  frontend:serve:
+    desc: 'Serve Angular locally (http://localhost:4200)'
+    dir: site/glad-ui
+    cmds:
+      - npm start
+
+  frontend:build:
+    desc: 'Build Angular for production'
+    dir: site/glad-ui
+    cmds:
+      - npm run build -- --configuration production
+
+  frontend:test:
+    desc: 'Run Angular unit tests'
+    dir: site/glad-ui
+    cmds:
+      - npm test
+
+  frontend:deploy:
+    desc: 'Deploy Angular to S3 and invalidate CloudFront cache'
+    deps: [frontend:build]
+    cmds:
+      - |
+        BUCKET_NAME=$(aws cloudformation describe-stacks \
+          --stack-name glad-frontend-stack-production \
+          --query "Stacks[0].Outputs[?OutputKey=='WebsiteBucketName'].OutputValue" \
+          --output text)
+        echo "Deploying to S3 bucket: $BUCKET_NAME"
+        aws s3 sync site/glad-ui/dist/glad-ui/browser s3://$BUCKET_NAME --delete
+      - |
+        DIST_ID=$(aws cloudformation describe-stacks \
+          --stack-name glad-frontend-stack-production \
+          --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+          --output text)
+        echo "Invalidating CloudFront distribution: $DIST_ID"
+        aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+
+  sync:config:
+    desc: 'Sync CDK outputs to Angular environment'
+    cmds:
+      - bash scripts/sync-cdk-outputs.sh
+
+  generate:amplify-config:
+    desc: 'Generate amplify_outputs.json from deployed CDK stacks'
+    cmds:
+      - go run ./cmd/generate-amplify-config/main.go --env production --output site/glad-ui/amplify_outputs.json
+
+  # Full deployment workflow
+  deploy:backend:
+    desc: 'Deploy backend infrastructure (CDK stacks)'
+    cmds:
+#      - task: glad:test
+      - task: glad:cdk:deploy
+
+  deploy:frontend:
+    desc: 'Deploy frontend (build + S3 upload + CloudFront invalidation)'
+    deps: [generate:amplify-config]
+    cmds:
+      - task: frontend:deploy
+
+  deploy:full:
+    desc: 'Deploy entire stack (backend + frontend)'
+    cmds:
+      - task: deploy:backend
+      - task: deploy:frontend
+      - echo '✅ Full stack deployment complete!'
+      - |
+        WEBSITE_URL=$(aws cloudformation describe-stacks \
+          --stack-name glad-frontend-stack-production \
+          --query "Stacks[0].Outputs[?OutputKey=='WebsiteURL'].OutputValue" \
+          --output text)
+        echo "🌐 Application URL: $WEBSITE_URL"

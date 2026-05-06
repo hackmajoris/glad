@@ -76,6 +76,55 @@ func (s *UserService) Register(username, name, password string) (*RegisterResult
 	return &RegisterResult{Username: username}, nil
 }
 
+// CreateUserFromCognito creates a DynamoDB user profile from Cognito user data
+// DEPRECATED: This method is no longer used. User profile creation is now handled by the
+// Cognito Post Confirmation Lambda trigger (cmd/cognito-triggers/post-confirmation).
+// The trigger automatically creates the DynamoDB profile when a user confirms their email.
+// This method is kept for backward compatibility and potential migration scenarios.
+func (s *UserService) CreateUserFromCognito(username, email string) (*models.User, error) {
+	log := logger.WithComponent("service").With("operation", "CreateUserFromCognito", "username", username)
+	start := time.Now()
+
+	log.Info("Creating user profile from Cognito data")
+
+	// Check if user already exists (shouldn't happen, but safe to check)
+	exists, err := s.repo.UserExists(username)
+	if err != nil {
+		log.Error("Failed to check user existence", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+	if exists {
+		log.Info("User profile already exists, skipping creation", "duration", time.Since(start))
+		// Return existing user instead of error
+		return s.repo.GetUser(username)
+	}
+
+	// Create minimal user profile from Cognito data
+	// Note: No password hash since Cognito handles authentication
+	now := time.Now()
+	user := &models.User{
+		Username:     username,
+		Name:         username, // Default to username, user can update later
+		Email:        email,
+		PasswordHash: "", // Empty - Cognito handles passwords
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		EntityType:   "User",
+	}
+
+	// Set DynamoDB keys
+	user.SetKeys()
+
+	// Save user to database
+	if err := s.repo.CreateUser(user); err != nil {
+		log.Error("Failed to create user profile in DynamoDB", "error", err.Error(), "duration", time.Since(start))
+		return nil, err
+	}
+
+	log.Info("User profile created successfully from Cognito data", "duration", time.Since(start))
+	return user, nil
+}
+
 // LoginResult contains the result of a login
 type LoginResult struct {
 	AccessToken string
